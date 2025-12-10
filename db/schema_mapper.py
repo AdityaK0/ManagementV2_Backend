@@ -1,11 +1,8 @@
-# schema_mapper.py
-
 SCHEMA_SQL = {
     "vendor": """
         CREATE TABLE IF NOT EXISTS vendor (
             id INTEGER PRIMARY KEY,
             business_name TEXT,
-            business_name_slug TEXT,
             business_description TEXT,
             business_email TEXT,
             business_type TEXT,

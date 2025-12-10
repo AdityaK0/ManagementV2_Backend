@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import logging
-from lambda_sqlite_builder.local_runner import build_local
+from db.local_runner import build_local
 
 router = APIRouter()
 logger = logging.getLogger("internal_api")

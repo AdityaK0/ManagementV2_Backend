@@ -4,12 +4,12 @@ import math
 import json
 
 
-async def get_vendor_collections(business_name_slug: str):
+async def get_vendor_collections(handle: str):
     """
     Fetch all portfolio collections for a vendor from SQLite.
     """
 
-    async with sqlite_manager.get_db(business_name_slug) as conn:
+    async with sqlite_manager.get_db(handle) as conn:
 
         # 1️⃣ Get portfolio ID
         portfolio_row = conn.execute(
@@ -78,7 +78,7 @@ async def get_vendor_collections(business_name_slug: str):
 # from es.es_client import get_es_context
 
 
-# async def get_vendor_collections(business_name_slug: str):
+# async def get_vendor_collections(handle: str):
 #     """
 #     Fetch all collections for a vendor from Elasticsearch
 #     """
@@ -89,7 +89,7 @@ async def get_vendor_collections(business_name_slug: str):
 #                 "query": {
 #                     "bool": {
 #                         "filter": [
-#                             {"term": {"business_name_slug": business_name_slug}},
+#                             {"term": {"handle": handle}},
 #                             {"term": {"is_active": True}},
 #                         ]
 #                     }

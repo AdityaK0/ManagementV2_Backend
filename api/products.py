@@ -44,25 +44,3 @@ async def public_product_detail(business_name: str, product_id: int):
         product_id
     )
     
-    
-
-    
-
-# @router.get("/public/{business_name}/products/")
-# async def public_products(
-#     business_name: str,
-#     page: int = 1,
-#     page_size: int = 10,
-#     search: str = Query("", alias="search"),
-#     min_price: float | None = None,
-#     max_price: float | None = None,
-#     category: str | None = None,
-# ):
-#     print("Search term:", search)
-#     return await get_vendor_products(
-#         business_name_slug=business_name,
-#         page=page,
-#         page_size=page_size,
-#         search=search,
-#     )
-

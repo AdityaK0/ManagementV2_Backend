@@ -2,14 +2,13 @@ import sqlite3
 from typing import Dict, Any, Optional
 from config import settings
 import json
-from utils.load_sqlite import load_sqlite_db
-async def get_vendor_portfolio(business_name_slug: str) -> Optional[Dict[str, Any]]:
+async def get_vendor_portfolio(handle: str) -> Optional[Dict[str, Any]]:
     """
     Fetch vendor public portfolio from its SQLite DB.
     Replaces Elasticsearch.
     """
 
-    db_path = load_sqlite_db(business_name_slug)
+    db_path = load_sqlite_db(handle)
     if not db_path:
         return None
 
@@ -47,12 +46,12 @@ async def get_vendor_portfolio(business_name_slug: str) -> Optional[Dict[str, An
 
 
 
-# async def get_vendor_portfolio(business_name_slug: str) -> Optional[Dict[str, Any]]:
+# async def get_vendor_portfolio(handle: str) -> Optional[Dict[str, Any]]:
 #     """
 #     Fetch a vendor portfolio document from Elasticsearch.
 
 #     Args:
-#         business_name_slug (str): vendor slug from route
+#         handle (str): vendor slug from route
 #     Returns:
 #         dict | None
 #     """
@@ -64,7 +63,7 @@ async def get_vendor_portfolio(business_name_slug: str) -> Optional[Dict[str, An
 #                 query={
 #                     "bool": {
 #                         "filter": [
-#                             {"term": {"business_name_slug": business_name_slug}},
+#                             {"term": {"handle": handle}},
 #                             {"term": {"is_public": True}}
 #                         ]
 #                     }

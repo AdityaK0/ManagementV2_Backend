@@ -69,7 +69,7 @@ def fetch_portfolio_full_json(self, vendor_slug: str):
         # 1) Vendor
         cursor.execute("""
             SELECT 
-                id, business_name, business_name_slug, business_description,
+                id, business_name, handle, business_description,
                 business_email, business_phone, whatsapp_number, handle
             FROM vendors_vendor
             WHERE handle = %s
@@ -155,7 +155,7 @@ def fetch_portfolio_full_json(self, vendor_slug: str):
             "display_name": portfolio["display_name"],
             "tagline": portfolio["tagline"],
             "slug": portfolio["slug"],
-            "business_name_slug": portfolio["business_name_slug"],
+            "handle": portfolio["handle"],
             "about_us": portfolio["about_us"],
             "theme_color": portfolio["theme_color"],
             "accent_color": portfolio["accent_color"],
