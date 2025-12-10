@@ -20,7 +20,7 @@ async def get_vendor_products(
         conditions = ["p.is_active = 1", "p.is_archived = 0"]
         params = []
 
-        # 💡 PRICE FILTERS
+        #  PRICE FILTERS
         if min_price is not None:
             conditions.append("p.price >= ?")
             params.append(min_price)
@@ -28,12 +28,12 @@ async def get_vendor_products(
             conditions.append("p.price <= ?")
             params.append(max_price)
 
-        # 💡 CATEGORY FILTER
+        #  CATEGORY FILTER
         if category:
             conditions.append("p.category_name = ?")
             params.append(category)
 
-        # 💡 SEARCH via FTS5
+        #  SEARCH via FTS5
         if search:
             fts = """
                 SELECT rowid FROM products_search 
