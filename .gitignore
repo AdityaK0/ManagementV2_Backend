@@ -1,0 +1,95 @@
+# --------------------------
+# Python
+# --------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.so
+
+# Bytecode cache
+*.pyc
+
+# Virtual Environments
+env/
+venv/
+ENV/
+.venv/
+.ENV/
+env.bak/
+venv.bak/
+
+# Installed packages
+site-packages/
+
+# --------------------------
+# FastAPI / Uvicorn / ASGI
+# --------------------------
+# Logs
+*.log
+logs/
+*.pid
+
+# Debug and cache
+.cache/
+*.db
+*.sqlite3
+
+# Alembic / Migrations cache (Optional if using Alembic)
+alembic.ini
+alembic/versions/*.pyc
+
+# --------------------------
+# OS / Editor trash
+# --------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# --------------------------
+# Environment & Secrets
+# --------------------------
+.env
+.env.local
+.env.*
+secret*
+settings.json
+
+# --------------------------
+# Dependencies from JS frontend (if exists)
+# --------------------------
+node_modules/
+dist/
+build/
+
+# --------------------------
+# Testing
+# --------------------------
+.coverage
+htmlcov/
+pytest_cache/
+.tox/
+.nox/
+
+# --------------------------
+# Compiled or build artifacts
+# --------------------------
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# --------------------------
+# Your project-specific directories
+# --------------------------
+# Ignore uploaded/media files
+media/
+uploads/
+
+# Ignore database dumps if you create backups
+backups/
+dump.sql
+dump.json
