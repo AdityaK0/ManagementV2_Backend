@@ -1,7 +1,7 @@
 import math
 import json
 from typing import Optional
-from services.sqlite_manager import sqlite_manager
+from .sqlite_manager import sqlite_manager
 
 
 async def get_vendor_products(
