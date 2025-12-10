@@ -17,7 +17,6 @@ class SQLiteManager:
 
     def __init__(self, cache_dir:str = os.environ.get("SQLITE_CACHE_DIR", "../sqlite_cache")):
         self.cache_dir = cache_dir
-        # Store connection per vendor: { "vendor_slug": { "conn": Connection, "mtime": float } }
         self.connections = {}
 
     def _get_db_path(self, vendor_slug: str):
