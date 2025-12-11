@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api import portfolio, products, collections
 import asyncio
-from db.redis_listener import start_background_listener
+from background.redis_listener import start_background_listener
 
 app = FastAPI(
     title="Portfolio API",
