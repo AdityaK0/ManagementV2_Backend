@@ -31,6 +31,7 @@ class RedisListener:
 
     async def start(self):
         """Starts the Redis subscription loop."""
+        print(f"Connecting to Redis at {self.redis_url}...")
         logger.info(f"Connecting to Redis at {self.redis_url}...")
         try:
             r = redis.from_url(self.redis_url, decode_responses=True)
