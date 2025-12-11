@@ -32,7 +32,9 @@ def load_settings() -> Settings:
     Load env from parent folder if `.env.prod` exists.
     Otherwise load `.env.local` from current project.
     """
-    parent_env = Path(__file__).resolve().parent.parent / ".env.prod"
+
+    # Your .env.prod is one folder ABOVE the project folder
+    parent_env = Path(__file__).resolve().parents[2] / ".env.prod"
     local_env = Path(__file__).resolve().parent / ".env.local"
 
     if parent_env.exists():
@@ -40,6 +42,7 @@ def load_settings() -> Settings:
         return Settings(_env_file=str(parent_env))
 
     return Settings(_env_file=str(local_env))
+
 
 
 settings = load_settings()
