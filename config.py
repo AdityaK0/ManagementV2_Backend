@@ -38,6 +38,8 @@ def load_settings() -> Settings:
 
     if parent_env.exists():
         # Use the production env from parent folder
+        print(f"🚀 Loaded production env: {parent_env}")
+
         return Settings(_env_file=str(parent_env))
     
     # Default fallback: load local env

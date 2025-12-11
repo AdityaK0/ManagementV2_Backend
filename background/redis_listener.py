@@ -96,5 +96,6 @@ class RedisListener:
 
 async def start_background_listener():
     """Entry point to run as background task."""
+    logger.info(f"REDIS URL: {os.environ.get('REDIS_URL')}")
     listener = RedisListener()
     await listener.start()
