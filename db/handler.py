@@ -11,7 +11,7 @@ from builder.redis_publisher import RedisPublisher
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-def handler(event, context):
+def lambda_handler(event, context):
     """
     Lambda Handler to build SQLite DB for a vendor.
     Event payload: { "vendor_slug": "some-slug" }
