@@ -17,12 +17,14 @@ class Settings(BaseSettings):
     ENVIRONMENT: str | None = None
     REDIS_URL: str | None = None
 
-    # SQLite cache directory (relative to project)
+    # SQLite cache directory
     SQLITE_CACHE_DIR: str = "../sqlite_cache"
-    S3_BUCKET_NAME: str | None = None
 
-    # Do not auto-load env file here
-    model_config = SettingsConfigDict(env_file=None, case_sensitive=False)
+    # S3 / AWS
+    S3_BUCKET_NAME: str | None = None
+    AWS_REGION: str | None = None
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
 
 
 def load_settings() -> Settings:
@@ -30,20 +32,13 @@ def load_settings() -> Settings:
     Load env from parent folder if `.env.prod` exists.
     Otherwise load `.env.local` from current project.
     """
-
-    # Path to parent folder .env.prod → ../.env.prod
     parent_env = Path(__file__).resolve().parent.parent / ".env.prod"
-
-    # Project local .env.local → ./ .env.local
     local_env = Path(__file__).resolve().parent / ".env.local"
 
     if parent_env.exists():
-        # Use the production env from parent folder
         print(f"🚀 Loaded production env: {parent_env}")
-
         return Settings(_env_file=str(parent_env))
-    
-    # Default fallback: load local env
+
     return Settings(_env_file=str(local_env))
 
 
