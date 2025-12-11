@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     # SQLite cache directory (relative to project)
     SQLITE_CACHE_DIR: str = "../sqlite_cache"
+    S3_BUCKET_NAME: str | None = None
 
     # Do not auto-load env file here
     model_config = SettingsConfigDict(env_file=None, case_sensitive=False)
