@@ -6,12 +6,21 @@ Serves public portfolio APIs backed by Elasticsearch
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api import portfolio, products, collections
+import asyncio
+from db.redis_listener import start_background_listener
 
 app = FastAPI(
     title="Portfolio API",
     description="Public portfolio APIs backed by Elasticsearch",
     version="1.0.0"
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+    print("Starting Redis listener...")
+    asyncio.create_task(start_background_listener())
+    print("Redis listener started in background")
 
 # Enable CORS
 app.add_middleware(
