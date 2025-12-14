@@ -6,6 +6,9 @@ import shutil
 import boto3
 import redis.asyncio as redis
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+
+EXECUTOR = ThreadPoolExecutor(max_workers=1)
 
 logger = logging.getLogger("redis_listener")
 
@@ -29,24 +32,41 @@ class RedisListener:
         else:
             self.s3_client = None
 
-    async def start(self):
-        """Starts the Redis subscription loop."""
-        print(f"Connecting to Redis at {self.redis_url}...")
-        logger.info(f"Connecting to Redis at {self.redis_url}...")
-        try:
-            r = redis.from_url(self.redis_url, decode_responses=True)
-            async with r.pubsub() as pubsub:
-                await pubsub.subscribe("vendor.sqlite.ready")
-                logger.info("Subscribed to channel: vendor.sqlite.ready")
+    # async def start(self):
+    #     """Starts the Redis subscription loop."""
+    #     logger.info(f"Connecting to Redis at {self.redis_url}...")
+    #     try:
+    #         r = redis.from_url(self.redis_url, decode_responses=True)
+    #         async with r.pubsub() as pubsub:
+    #             await pubsub.subscribe("vendor.sqlite.ready")
+    #             logger.info("Subscribed to channel: vendor.sqlite.ready")
                 
-                async for message in pubsub.listen():
-                    if message["type"] == "message":
-                        await self.handle_message(message["data"])
-        except Exception as e:
-            logger.error(f"Redis Listener Error: {e}")
-            # Retry logic could go here
-            await asyncio.sleep(5)
-            await self.start()
+    #             async for message in pubsub.listen():
+    #                 if message["type"] == "message":
+    #                     await self.handle_message(message["data"])
+    #     except Exception as e:
+    #         logger.error(f"Redis listener crashed. Retrying in 5s: {e}")
+    #         # Retry logic could go here
+    #         await asyncio.sleep(5)
+    
+    async def start(self): # single lister all over 
+        while True:
+            try:
+                logger.info(f"Connecting to Redis at {self.redis_url}")
+                r = redis.from_url(self.redis_url, decode_responses=True)
+
+                async with r.pubsub() as pubsub:
+                    await pubsub.subscribe("vendor.sqlite.ready")
+                    logger.info("Subscribed to vendor.sqlite.ready")
+
+                    async for message in pubsub.listen():
+                        if message["type"] == "message":
+                            await self.handle_message(message["data"])
+
+            except Exception as e:
+                logger.exception("Redis listener crashed. Retrying in 5s")
+                await asyncio.sleep(5)
+
 
     async def handle_message(self, data_str: str):
         try:
@@ -61,7 +81,16 @@ class RedisListener:
             if vendor_slug:
                 # Run blocking download/copy in executor
                 loop = asyncio.get_event_loop()
-                await loop.run_in_executor(None, self.update_db_file, vendor_slug, s3_key, local_path)
+                await loop.run_in_executor(
+                    EXECUTOR,
+                    self.update_db_file,
+                    vendor_slug,
+                    s3_key,
+                    local_path
+                )
+
+
+                # await loop.run_in_executor(None, self.update_db_file, vendor_slug, s3_key, local_path)
                 
         except json.JSONDecodeError:
             logger.error("Invalid JSON received")
