@@ -120,7 +120,7 @@ class RedisListener:
                 logger.warning(f"No valid source (s3_key or local_path) for {vendor_slug}")
                 return
 
-            logger.info(f"Atomically replacing {target_file}...")
+            logger.info(f"Atomically replacing {current_file}...")
             # os.replace(tmp_file, target_file)
             os.replace(tmp_file, current_file)
             logger.info(f"Successfully updated DB for {vendor_slug}")
