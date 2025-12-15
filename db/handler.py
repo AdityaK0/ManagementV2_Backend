@@ -2,10 +2,10 @@ import os
 import sys
 import logging
 import time
-from builder.postgres_reader import PostgresReader
-from builder.sqlite_builder import SQLiteBuilder
-from builder.s3_uploader import S3Uploader
-from builder.redis_publisher import RedisPublisher
+from postgres_reader import PostgresReader
+from sqlite_builder import SQLiteBuilder
+from s3_uploader import S3Uploader
+from redis_publisher import RedisPublisher
 
 # Configure Logging
 logger = logging.getLogger()
@@ -81,11 +81,18 @@ def lambda_handler(event, context):
     # It probably downloads the *content* of the latest pointer. 
     # But sending the version helps debugging.
     
+    # publisher.publish_update(
+    #     vendor_slug=vendor_slug,
+    #     s3_key=keys['latest_key'], # Point them to the standard key
+    #     version=timestamp
+    # )
     publisher.publish_update(
         vendor_slug=vendor_slug,
-        s3_key=keys['latest_key'], # Point them to the standard key
+        s3_key=keys['current_key'],
         version=timestamp
     )
+
+
 
     # 5. CLEANUP
     logger.info("Step 5: Cleanup...")

@@ -7,6 +7,7 @@ import boto3
 import redis.asyncio as redis
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+import time
 
 EXECUTOR = ThreadPoolExecutor(max_workers=1)
 
@@ -101,8 +102,12 @@ class RedisListener:
         """
         Updates the local DB file from S3 OR a local source path.
         """
-        target_file = self.cache_dir / f"{vendor_slug}.db"
-        tmp_file = self.cache_dir / f"{vendor_slug}.db.tmp"
+        # target_file = self.cache_dir / f"{vendor_slug}.db"
+        # tmp_file = self.cache_dir / f"{vendor_slug}.db.tmp"
+
+        current_file = self.cache_dir / f"{vendor_slug}.current.db"
+        tmp_file = self.cache_dir / f"{vendor_slug}.{int(time.time())}.db"
+
         
         try:
             if local_path and os.path.exists(local_path):
@@ -116,9 +121,15 @@ class RedisListener:
                 return
 
             logger.info(f"Atomically replacing {target_file}...")
-            os.replace(tmp_file, target_file)
+            # os.replace(tmp_file, target_file)
+            os.replace(tmp_file, current_file)
             logger.info(f"Successfully updated DB for {vendor_slug}")
-            
+
+            for suffix in ("-wal", "-shm"):
+                stale = self.cache_dir / f"{vendor_slug}.current.db{suffix}"
+                if stale.exists():
+                    stale.unlink()
+                        
         except Exception as e:
             logger.error(f"Update failed: {e}")
             if tmp_file.exists():

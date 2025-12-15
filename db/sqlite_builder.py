@@ -1,9 +1,10 @@
-import sqlite3
+# import sqlite3
+from pysqlite3 import dbapi2 as sqlite3
 import json
 import logging
 from datetime import datetime
 from decimal import Decimal
-from .schema_mapper import SCHEMA_SQL, FTS_SQL
+from schema_mapper import SCHEMA_SQL, FTS_SQL
 
 logger = logging.getLogger()
 

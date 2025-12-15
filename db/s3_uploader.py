@@ -26,15 +26,17 @@ class S3Uploader:
         versioned_key = f"sqlite_cache/{vendor_slug}/{timestamp}.db"
         
         # Latest Key
-        latest_key = f"sqlite_cache/{vendor_slug}.db"
+        # latest_key = f"sqlite_cache/{vendor_slug}.db"
+        current_key = f"sqlite_cache/{vendor_slug}.current.db"
         
         logger.info(f"Uploading to S3: {versioned_key}")
         self.s3_client.upload_file(file_path, self.bucket_name, versioned_key)
         
-        logger.info(f"Uploading to S3 (Latest): {latest_key}")
-        self.s3_client.upload_file(file_path, self.bucket_name, latest_key)
+        logger.info(f"Uploading to S3 (Latest): {current_key}")
+        self.s3_client.upload_file(file_path, self.bucket_name, current_key)
         
         return {
             "versioned_key": versioned_key,
-            "latest_key": latest_key
+            "current_key": current_key
         }
+
