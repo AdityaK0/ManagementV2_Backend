@@ -142,3 +142,15 @@ async def get_vendor_product_detail(handle: str, product_id: int):
 
         return p
 
+async def get_vendor_product_categories(handle: str):
+    async with sqlite_manager.get_db(handle) as conn:
+        rows = conn.execute(
+            """
+            SELECT DISTINCT name
+            FROM category
+            WHERE is_active = 1
+            ORDER BY created_at ASC
+            """
+        ).fetchall()
+        
+        return [r["name"] for r in rows]

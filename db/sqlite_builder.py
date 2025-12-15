@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime
 from decimal import Decimal
-from .schema_mapper import SCHEMA_SQL, FTS_SQL
+from db.schema_mapper import SCHEMA_SQL, FTS_SQL
 
 logger = logging.getLogger()
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
 from typing import Union
-from services.product_service import get_vendor_products,get_vendor_product_detail
+from services.product_service import get_vendor_products,get_vendor_product_detail,get_vendor_product_categories
 
 router = APIRouter(prefix="/api/portfolio", tags=["products"])
 
@@ -13,10 +13,12 @@ async def public_products(
     search: str = "",
     min_price: Union[float, None, str] = Query(None),
     max_price: Union[float, None, str] = Query(None),
+    category: Union[str, None, str] = Query(None),
 ):
     # convert empty strings to None
     min_price = None if min_price in ("", None) else float(min_price)
     max_price = None if max_price in ("", None) else float(max_price)
+    category = None if category in ("", None) else category
 
     return await get_vendor_products(
         business_name,
@@ -25,6 +27,7 @@ async def public_products(
         search,
         min_price,
         max_price,
+        category,
     )
 
 
@@ -42,5 +45,13 @@ async def public_product_detail(business_name: str, product_id: int):
     return await get_vendor_product_detail(
         business_name,
         product_id
+    )
+    
+
+@router.get("/public/{business_name}/categories/")
+async def get_vendor_categories(business_name: str):
+
+    return await get_vendor_product_categories(
+        business_name
     )
     
