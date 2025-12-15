@@ -35,11 +35,19 @@ async def get_vendor_products(
 
         #  SEARCH via FTS5
         if search:
+            # fts = """
+            #     SELECT rowid FROM products_search 
+            #     WHERE products_search MATCH ?
+            # """
+            # match = f'"{search}" OR {search}*'
+            # conditions.append(f"p.id IN ({fts})")
+            # params.append(match)
+            # SEARCH via FTS5
             fts = """
-                SELECT rowid FROM products_search 
+                SELECT id FROM products_search
                 WHERE products_search MATCH ?
             """
-            match = f'"{search}" OR {search}*'
+            match = f"{search}*"
             conditions.append(f"p.id IN ({fts})")
             params.append(match)
 
