@@ -52,3 +52,35 @@ async def get_vendor_collections(handle: str):
             final.append(cd)
 
         return final
+
+async def get_vendor_collection_details(handle: str, collection_id: int):
+    async with sqlite_manager.get_db(handle) as conn:
+        # Fetch the collection
+        collection = conn.execute(
+            """
+            SELECT *
+            FROM portfolio_collection
+            WHERE id = ?
+              AND is_active = 1
+            """,
+            (collection_id,)
+        ).fetchone()
+
+        if not collection:
+            return None
+
+        # Fetch product mappings for this collection
+        map_rows = conn.execute(
+            """
+            SELECT product_id
+            FROM portfolio_collection_product
+            WHERE collection_id = ?
+            """,
+            (collection_id,)
+        ).fetchall()
+
+        # Build the response with product_ids
+        collection_dict = dict(collection)
+        collection_dict["product_ids"] = [row["product_id"] for row in map_rows]
+
+        return collection_dict
