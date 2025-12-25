@@ -31,6 +31,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Latency tracking middleware (for performance monitoring)
+from middleware.latency_tracker import track_latency_middleware
+app.middleware("http")(track_latency_middleware)
+
 # Include routers
 app.include_router(portfolio.router, tags=["portfolio"])
 app.include_router(products.router, tags=["products"])

@@ -1,6 +1,12 @@
 import asyncio
 from services.sqlite_manager import sqlite_manager
 
+# OPT-3: Use ujson for 20-40% faster JSON parsing (if needed in future)
+try:
+    import ujson as json
+except ImportError:
+    import json  # Fallback to stdlib
+
 
 async def get_vendor_collections(handle: str):
 

@@ -1,7 +1,12 @@
 import math
-import json
 import asyncio
 from .sqlite_manager import sqlite_manager
+
+# OPT-3: Use ujson for 20-40% faster JSON parsing
+try:
+    import ujson as json
+except ImportError:
+    import json  # Fallback to stdlib
 
 
 async def get_vendor_products(

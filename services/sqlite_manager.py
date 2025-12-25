@@ -1,7 +1,10 @@
 import sqlite3
 import logging
 import os
+import asyncio
 from contextlib import asynccontextmanager
+from collections import defaultdict
+from typing import Dict, List
 from fastapi import HTTPException
 
 logger = logging.getLogger("sqlite_manager")
@@ -9,17 +12,25 @@ logger = logging.getLogger("sqlite_manager")
 class SQLiteManager:
     def __init__(self, cache_dir: str = os.environ.get("SQLITE_CACHE_DIR", "../sqlite_cache")):
         self.cache_dir = cache_dir
+        # Connection pooling
+        self._pools: Dict[str, List] = defaultdict(list)
+        self._locks: Dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+        self._max_pool_size = 5  # Max connections per vendor
 
     def _get_db_path(self, vendor_slug: str):
         return os.path.join(self.cache_dir, f"{vendor_slug}.current.db")
 
     def _get_connection(self, vendor_slug: str):
+        """
+        Creates a new SQLite connection with aggressive read optimizations.
+        This is a sync method called from async context via asyncio.to_thread().
+        """
         db_path = self._get_db_path(vendor_slug)
 
         if not os.path.exists(db_path):
             return None
 
-        logger.info(f"Opening SQLite connection for {vendor_slug}")
+        logger.debug(f"Opening SQLite connection for {vendor_slug}")
 
         conn = sqlite3.connect(
             db_path,
@@ -30,31 +41,61 @@ class SQLiteManager:
 
         conn.row_factory = sqlite3.Row
 
-        # Read-only safe optimizations
+        # OPT-1: Aggressive read-only optimizations
         conn.execute("PRAGMA query_only = 1;")
-        conn.execute("PRAGMA synchronous = NORMAL;")
+        conn.execute("PRAGMA synchronous = OFF;")  # Safe for read-only
         conn.execute("PRAGMA temp_store = MEMORY;")
+        conn.execute("PRAGMA cache_size = -64000;")  # 64MB page cache
+        conn.execute("PRAGMA mmap_size = 268435456;")  # 256MB memory-mapped I/O
+        conn.execute("PRAGMA page_size = 4096;")  # Optimal for modern systems
+        conn.execute("PRAGMA locking_mode = NORMAL;")
+        conn.execute("PRAGMA journal_mode = WAL;")  # Ensure WAL mode
 
         return conn
 
+    async def _create_connection(self, vendor_slug: str):
+        """Create connection off event loop"""
+        return await asyncio.to_thread(self._get_connection, vendor_slug)
+
     @asynccontextmanager
     async def get_db(self, vendor_slug: str):
-        conn = self._get_connection(vendor_slug)
-
+        """
+        OPT-2: Connection pooling context manager.
+        Reuses connections when available, creates new ones when pool is empty.
+        """
+        conn = None
+        
+        # Try to get from pool
+        async with self._locks[vendor_slug]:
+            if self._pools[vendor_slug]:
+                conn = self._pools[vendor_slug].pop()
+                logger.debug(f"Reused connection for {vendor_slug} (pool size: {len(self._pools[vendor_slug])})")
+        
+        # Create new if pool empty
+        if not conn:
+            conn = await self._create_connection(vendor_slug)
+            if conn:
+                logger.debug(f"Created new connection for {vendor_slug}")
+        
         if not conn:
             logger.error(f"Database not found for {vendor_slug}")
             raise HTTPException(status_code=503, detail="Vendor data unavailable")
-
+        
         try:
             yield conn
         except Exception as e:
             logger.error(f"SQLite error for {vendor_slug}: {e}")
             raise
         finally:
-            try:
-                conn.close()
-            except Exception:
-                pass
+            # OPT-5: Return to pool or close async
+            async with self._locks[vendor_slug]:
+                if len(self._pools[vendor_slug]) < self._max_pool_size:
+                    self._pools[vendor_slug].append(conn)
+                    logger.debug(f"Returned connection to pool for {vendor_slug} (pool size: {len(self._pools[vendor_slug])})")
+                else:
+                    # Pool full, close connection off event loop
+                    await asyncio.to_thread(conn.close)
+                    logger.debug(f"Closed connection for {vendor_slug} (pool full)")
 
 sqlite_manager = SQLiteManager(
     cache_dir=os.environ.get("SQLITE_CACHE_DIR", "../sqlite_cache")

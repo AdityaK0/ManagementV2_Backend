@@ -1,7 +1,12 @@
 import asyncio
-import json
 from typing import Dict, Any, Optional
 from services.sqlite_manager import sqlite_manager
+
+# OPT-3: Use ujson for 20-40% faster JSON parsing
+try:
+    import ujson as json
+except ImportError:
+    import json  # Fallback to stdlib
 
 
 async def get_vendor_portfolio(handle: str) -> Optional[Dict[str, Any]]:
@@ -15,10 +20,14 @@ async def get_vendor_portfolio(handle: str) -> Optional[Dict[str, Any]]:
     if not row:
         return None
 
-    try:
-        return json.loads(row["response_json"])
-    except Exception:
-        return None
+    # OPT-4: Parse large JSON off event loop
+    def parse_json(row):
+        try:
+            return json.loads(row["response_json"])
+        except Exception:
+            return None
+    
+    return await asyncio.to_thread(lambda: parse_json(row))
 
 
 # import sqlite3
