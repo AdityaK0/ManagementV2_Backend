@@ -98,6 +98,50 @@ async def get_vendor_products(
     }
 
 
+async def get_vendor_product_detail(handle: str, product_id: int):
+    async with sqlite_manager.get_db(handle) as conn:
+
+        # Fetch product (OFF event loop)
+        row = await asyncio.to_thread(
+            lambda: conn.execute(
+                """
+                SELECT *
+                FROM product
+                WHERE id = ?
+                  AND is_active = 1
+                  AND is_archived = 0
+                """,
+                (product_id,)
+            ).fetchone()
+        )
+
+        if not row:
+            return None
+
+    # Process JSON fields (OFF event loop)
+    def build_product(row):
+        p = dict(row)
+
+        try:
+            p["images"] = json.loads(p["images_processed"]) if p["images_processed"] else []
+        except:
+            p["images"] = []
+
+        try:
+            p["sizes"] = json.loads(p["sizes"]) if p["sizes"] else []
+        except:
+            p["sizes"] = []
+
+        try:
+            p["dimensions"] = json.loads(p["dimensions"]) if p["dimensions"] else None
+        except:
+            p["dimensions"] = None
+
+        return p
+
+    return await asyncio.to_thread(lambda: build_product(row))
+
+
 # import math
 # import json
 # from typing import Optional
