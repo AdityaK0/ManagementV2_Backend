@@ -8,9 +8,19 @@ async def get_vendor_portfolio(handle: str) -> Optional[Dict[str, Any]]:
     """
     Fetch vendor public portfolio from SQLite (replaces Elasticsearch).
     """
-    
+
+    import asyncio
+
     async with sqlite_manager.get_db(handle) as conn:
-        row = conn.execute("SELECT response_json FROM portfolio LIMIT 1").fetchone()
+        row = await asyncio.to_thread(
+            lambda: conn.execute(
+                "SELECT response_json FROM portfolio LIMIT 1"
+            ).fetchone()
+        )
+
+    
+    # async with sqlite_manager.get_db(handle) as conn:
+    #     row = conn.execute("SELECT response_json FROM portfolio LIMIT 1").fetchone()
 
         if not row:
             return None
