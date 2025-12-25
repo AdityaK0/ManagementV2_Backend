@@ -13,7 +13,7 @@ async def public_collections(business_name: str):
 
     return collections
 
-@router.get("/public/{business_name}/collections/{id}")
+@router.get("/public/{business_name}/collections/{id}/")
 async def public_collectio_details(business_name: str, id: int):
     collection = await get_vendor_collection_details(business_name, id)
 
