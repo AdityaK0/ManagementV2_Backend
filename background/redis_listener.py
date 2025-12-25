@@ -140,3 +140,15 @@ async def start_background_listener():
     logger.info(f"REDIS URL: {os.environ.get('REDIS_URL')}")
     listener = RedisListener()
     await listener.start()
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+    try:
+        asyncio.run(start_background_listener())
+    except KeyboardInterrupt:
+        logger.info("Redis listener stopped")
