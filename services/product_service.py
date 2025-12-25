@@ -142,6 +142,26 @@ async def get_vendor_product_detail(handle: str, product_id: int):
     return await asyncio.to_thread(lambda: build_product(row))
 
 
+async def get_vendor_product_categories(handle: str):
+    async with sqlite_manager.get_db(handle) as conn:
+
+        # Fetch rows (OFF event loop)
+        rows = await asyncio.to_thread(
+            lambda: conn.execute(
+                """
+                SELECT DISTINCT name
+                FROM category
+                WHERE is_active = 1
+                ORDER BY created_at ASC
+                """
+            ).fetchall()
+        )
+
+    # Build response (OFF event loop)
+    return await asyncio.to_thread(
+        lambda: [r["name"] for r in rows]
+    )
+
 # import math
 # import json
 # from typing import Optional
