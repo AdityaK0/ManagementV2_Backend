@@ -54,7 +54,7 @@ class RedisListener:
         while True:
             try:
                 logger.info(f"Connecting to Redis at {self.redis_url}")
-                r = redis.from_url(self.redis_url, decode_responses=True)
+                r = redis.from_url(self.redis_url, decode_responses=True,socket_timeout=None)
 
                 async with r.pubsub() as pubsub:
                     await pubsub.subscribe("vendor.sqlite.ready")
