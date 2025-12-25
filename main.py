@@ -16,11 +16,11 @@ app = FastAPI(
 )
 
 
-@app.on_event("startup")
-async def startup_event():
-    print("Starting Redis listener...")
-    asyncio.create_task(start_background_listener())
-    print("Redis listener started in background")
+# @app.on_event("startup")
+# async def startup_event():
+#     print("Starting Redis listener...")
+#     asyncio.create_task(start_background_listener())
+#     print("Redis listener started in background")
 
 # Enable CORS
 app.add_middleware(
