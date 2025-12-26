@@ -71,7 +71,15 @@ class RedisListener:
             if vendor_slug:
                 # Run blocking download/copy in executor
                 loop = asyncio.get_event_loop()
-                success = await loop.run_in_executor(
+                # success = await loop.run_in_executor(
+                #     EXECUTOR,
+                #     self.update_db_file,
+                #     vendor_slug,
+                #     s3_key,
+                #     local_path,
+                #     version
+                # )
+                await loop.run_in_executor(
                     EXECUTOR,
                     self.update_db_file,
                     vendor_slug,
@@ -80,20 +88,20 @@ class RedisListener:
                     version
                 )
                 
-                if success:
-                    logger.info(f"Updating DB Started .....")
+                # if success:
+                #     logger.info(f"Updating DB Started .....")
 
-                    # await self.redis_kv.setex(
-                    #     f"vendor:sqlite:ACK:{vendor_slug}",
-                    #     120,
-                    #     "1"
-                    # )
-                    # logger.info(
-                    #     f"ACK KEY SET → vendor:sqlite:ACK:{vendor_slug}"
-                    # )
+                #     # await self.redis_kv.setex(
+                #     #     f"vendor:sqlite:ACK:{vendor_slug}",
+                #     #     120,
+                #     #     "1"
+                #     # )
+                #     # logger.info(
+                #     #     f"ACK KEY SET → vendor:sqlite:ACK:{vendor_slug}"
+                #     # )
 
-                else:
-                    logger.error("DB update failed")    
+                # else:
+                #     logger.error("DB update failed")    
 
 
                 # await loop.run_in_executor(None, self.update_db_file, vendor_slug, s3_key, local_path)
@@ -144,14 +152,19 @@ class RedisListener:
             return False    
 
 
-    def update_version_file(self, vendor_slug: str, version: str):
-        path = f"{self.cache_dir}/{vendor_slug}.version"
-        tmp = path + ".tmp"
+    def update_version_file(self, vendor_slug, version):
+        logger.error(f"[DEBUG] Writing version file for {vendor_slug} at {self.cache_dir}")
+        output_dir: str = os.environ.get("SQLITE_CACHE_DIR", "../sqlite_cache")
+        path = Path(output_dir) / f"{vendor_slug}.version"
+        tmp = Path(str(path) + ".tmp")
 
         with open(tmp, "w") as f:
             f.write(version)
 
-        os.replace(tmp, path)  # atomic
+        os.replace(tmp, path)
+
+        logger.error(f"[DEBUG] Version file written: {path}")
+
         
 
 async def start_background_listener():
