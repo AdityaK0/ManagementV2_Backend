@@ -85,7 +85,7 @@ class RedisListener:
                     vendor_slug,
                     s3_key,
                     local_path,
-                    version
+                    str(version)
                 )
                 
                 # if success:
@@ -142,15 +142,14 @@ class RedisListener:
                 stale = self.cache_dir / f"{vendor_slug}.current.db{suffix}"
                 if stale.exists():
                     stale.unlink()
-            if version:
-                version_path = self.cache_dir / f"{vendor_slug}.version"
-                tmp_version = self.cache_dir / f"{vendor_slug}.version.tmp"
-    
-                with open(tmp_version, "w") as f:
-                    f.write(str(version))
+            version_path = self.cache_dir / f"{vendor_slug}.version"
+            tmp_version = self.cache_dir / f"{vendor_slug}.version.tmp"
 
-                os.replace(tmp_version, version_path)
-                logger.info(f"Version file updated → {version_path}")        
+            with open(tmp_version, "w") as f:
+                f.write(str(version))
+
+            os.replace(tmp_version, version_path)
+            logger.info(f"Version file updated → {version_path}")        
 
             return True            
         except Exception as e:
