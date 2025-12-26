@@ -87,12 +87,12 @@ class RedisListener:
                     logger.info(f"ACK published for {vendor_slug} (v{version})")
 
                     await self.redis_kv.setex(
-                        f"vendor:sqlite:ready:{vendor_slug}:{version}",
+                        f"vendor:sqlite:ACK:{vendor_slug}",
                         120,
                         "1"
                     )
                     logger.info(
-                        f"ACK KEY SET → vendor:sqlite:ready:{vendor_slug}:{version}"
+                        f"ACK KEY SET → vendor:sqlite:ACK:{vendor_slug}"
                     )
 
                 else:
