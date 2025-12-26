@@ -78,8 +78,13 @@ class RedisListener:
                     local_path
                 )
                 if success:
-                    await self.publish_ack(vendor_slug, version)
                     logger.info(f"ACK published for {vendor_slug} (v{version})")
+
+                    await self.redis.setex(
+                        f"vendor:sqlite:ready:{vendor_slug}:{version}",
+                        120,
+                        "1"
+                    )
                 else:
                     logger.error("NOT publishing ACK — DB update failed")    
 
@@ -90,15 +95,6 @@ class RedisListener:
             logger.error("Invalid JSON received")
         except Exception as e:
             logger.error(f"Error handling message: {e}")
-
-    async def publish_ack(self, vendor_slug, version):
-        ack = {
-            "vendor_slug": vendor_slug,
-            "version": version,
-            "status": "ready"
-        }
-        await self.redis.publish("vendor.sqlite.ack", json.dumps(ack))
-         
 
     def update_db_file(self, vendor_slug: str, s3_key: str = None, local_path: str = None):
         """
