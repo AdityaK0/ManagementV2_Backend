@@ -76,7 +76,8 @@ class RedisListener:
                     self.update_db_file,
                     vendor_slug,
                     s3_key,
-                    local_path
+                    local_path,
+                    version
                 )
                 
                 if success:
@@ -102,7 +103,7 @@ class RedisListener:
         except Exception as e:
             logger.error(f"Error handling message: {e}")
 
-    def update_db_file(self, vendor_slug: str, s3_key: str = None, local_path: str = None):
+    def update_db_file(self, vendor_slug: str, s3_key: str = None, local_path: str = None, version: str = None):
         """
         Updates the local DB file from S3 OR a local source path.
         """
@@ -133,7 +134,8 @@ class RedisListener:
                 stale = self.cache_dir / f"{vendor_slug}.current.db{suffix}"
                 if stale.exists():
                     stale.unlink()
-            self.update_version_file(vendor_slug, version)        
+            if version: 
+                self.update_version_file(vendor_slug, str(version))        
             return True            
         except Exception as e:
             logger.error(f"Update failed: {e}")
