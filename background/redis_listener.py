@@ -143,13 +143,14 @@ class RedisListener:
                 if stale.exists():
                     stale.unlink()
             if version:
-                version_path = current_file.with_suffix(".version")
-                tmp_version = version_path.with_suffix(".version.tmp")
-
+                version_path = self.cache_dir / f"{vendor_slug}.version"
+                tmp_version = self.cache_dir / f"{vendor_slug}.version.tmp"
+    
                 with open(tmp_version, "w") as f:
                     f.write(str(version))
 
-                os.replace(tmp_version, version_path)           
+                os.replace(tmp_version, version_path)
+                logger.info(f"Version file updated → {version_path}")        
 
             return True            
         except Exception as e:
