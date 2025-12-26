@@ -25,7 +25,7 @@ async def public_products(
 
     if page == 1 and page_size == 10:
         response.headers["Cache-Control"] = (
-            "public, max-age=300, stale-while-revalidate=600"
+            "public, max-age=0, s-maxage=300, stale-while-revalidate=600"
         )
 
 
