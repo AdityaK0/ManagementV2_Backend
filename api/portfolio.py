@@ -11,7 +11,8 @@ async def public_vendor_portfolio(business_name: str,response: Response):
         raise HTTPException(status_code=404, detail="Portfolio not found")
 
     response.headers["Cache-Control"] = (
-        "public, max-age=0, s-maxage=300, stale-while-revalidate=600"
+        # "public, max-age=0, s-maxage=300, stale-while-revalidate=600"
+        "public, max-age=0, s-maxage=300"
     )
 
     return data
