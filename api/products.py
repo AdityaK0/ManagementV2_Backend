@@ -46,11 +46,11 @@ async def public_products(
 
 
 @router.get("/public/{business_name}/products/{product_id}/")
-async def public_product_detail(business_name: str, product_id: int):
+async def public_product_detail(business_name: str, product_id: int,response: Response):
     """
     Fetch a single product detail by vendor slug (business_name) and product_id.
     """
-    
+    response.headers["Cache-Control"] = "no-store"
     return await get_vendor_product_detail(
         business_name,
         product_id
@@ -58,8 +58,10 @@ async def public_product_detail(business_name: str, product_id: int):
     
 
 @router.get("/public/{business_name}/categories/")
-async def get_vendor_categories(business_name: str):
-
+async def get_vendor_categories(business_name: str,response: Response):
+    response.headers["Cache-Control"] = (
+        "public, max-age=0, s-maxage=300, stale-while-revalidate=600"
+    )
     return await get_vendor_product_categories(
         business_name
     )
