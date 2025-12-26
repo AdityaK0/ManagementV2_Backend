@@ -24,6 +24,12 @@ class RedisListener:
             socket_timeout=None
         )
 
+        self.redis_kv = redis.from_url(
+            self.redis_url,
+            decode_responses=True,
+            socket_timeout=5,
+        )
+
         
         # Ensure cache dir exists
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -80,11 +86,15 @@ class RedisListener:
                 if success:
                     logger.info(f"ACK published for {vendor_slug} (v{version})")
 
-                    await self.redis.setex(
+                    await self.redis_kv.setex(
                         f"vendor:sqlite:ready:{vendor_slug}:{version}",
                         120,
                         "1"
                     )
+                    logger.info(
+                        f"ACK KEY SET → vendor:sqlite:ready:{vendor_slug}:{version}"
+                    )
+
                 else:
                     logger.error("NOT publishing ACK — DB update failed")    
 

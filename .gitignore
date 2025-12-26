@@ -94,3 +94,7 @@ uploads/
 backups/
 dump.sql
 dump.json
+
+
+load_test.py
+redis_test.py
