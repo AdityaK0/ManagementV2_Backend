@@ -24,11 +24,11 @@ class RedisListener:
             socket_timeout=None
         )
 
-        self.redis_kv = redis.from_url(
-            self.redis_url,
-            decode_responses=True,
-            socket_timeout=5,
-        )
+        # self.redis_kv = redis.from_url(
+        #     self.redis_url,
+        #     decode_responses=True,
+        #     socket_timeout=5,
+        # )
 
         
         # Ensure cache dir exists
@@ -84,19 +84,19 @@ class RedisListener:
                     local_path
                 )
                 if success:
-                    logger.info(f"ACK published for {vendor_slug} (v{version})")
+                    logger.info(f"Updating DB Started .....")
 
-                    await self.redis_kv.setex(
-                        f"vendor:sqlite:ACK:{vendor_slug}",
-                        120,
-                        "1"
-                    )
-                    logger.info(
-                        f"ACK KEY SET → vendor:sqlite:ACK:{vendor_slug}"
-                    )
+                    # await self.redis_kv.setex(
+                    #     f"vendor:sqlite:ACK:{vendor_slug}",
+                    #     120,
+                    #     "1"
+                    # )
+                    # logger.info(
+                    #     f"ACK KEY SET → vendor:sqlite:ACK:{vendor_slug}"
+                    # )
 
                 else:
-                    logger.error("NOT publishing ACK — DB update failed")    
+                    logger.error("DB update failed")    
 
 
                 # await loop.run_in_executor(None, self.update_db_file, vendor_slug, s3_key, local_path)
