@@ -27,11 +27,6 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str | None = None
 
 
-    # Cloudflare
-    CF_API_TOKEN: str | None = None
-    CF_ZONE_ID: str | None = None
-
-
 def load_settings() -> Settings:
     """
     Load env from parent folder if `.env.prod` exists.
