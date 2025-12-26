@@ -18,6 +18,12 @@ class RedisListener:
         self.redis_url = os.environ.get("REDIS_URL", "redis://localhost:6380")
         self.s3_bucket = os.environ.get("S3_BUCKET_NAME")
         self.cache_dir = Path(os.environ.get("SQLITE_CACHE_DIR", "/tmp/sqlite_cache"))
+        self.redis = redis.from_url(
+            self.redis_url,
+            decode_responses=True,
+            socket_timeout=None
+        )
+
         
         # Ensure cache dir exists
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -33,35 +39,17 @@ class RedisListener:
         else:
             self.s3_client = None
 
-    # async def start(self):
-    #     """Starts the Redis subscription loop."""
-    #     logger.info(f"Connecting to Redis at {self.redis_url}...")
-    #     try:
-    #         r = redis.from_url(self.redis_url, decode_responses=True)
-    #         async with r.pubsub() as pubsub:
-    #             await pubsub.subscribe("vendor.sqlite.ready")
-    #             logger.info("Subscribed to channel: vendor.sqlite.ready")
-                
-    #             async for message in pubsub.listen():
-    #                 if message["type"] == "message":
-    #                     await self.handle_message(message["data"])
-    #     except Exception as e:
-    #         logger.error(f"Redis listener crashed. Retrying in 5s: {e}")
-    #         # Retry logic could go here
-    #         await asyncio.sleep(5)
     
     async def start(self): # single lister all over 
         while True:
             try:
-                logger.info(f"Connecting to Redis at {self.redis_url}")
-                r = redis.from_url(self.redis_url, decode_responses=True,socket_timeout=None)
+                # r = redis.from_url(self.redis_url, decode_responses=True,socket_timeout=None)
+                pubsub = self.redis.pubsub()
+                await pubsub.subscribe("vendor.sqlite.ready")
+                logger.info("Subscribed to vendor.sqlite.ready")
 
-                async with r.pubsub() as pubsub:
-                    await pubsub.subscribe("vendor.sqlite.ready")
-                    logger.info("Subscribed to vendor.sqlite.ready")
-
-                    async for message in pubsub.listen():
-                        if message["type"] == "message":
+                async for message in pubsub.listen():
+                    if message["type"] == "message":
                             await self.handle_message(message["data"])
 
             except Exception as e:
@@ -82,13 +70,18 @@ class RedisListener:
             if vendor_slug:
                 # Run blocking download/copy in executor
                 loop = asyncio.get_event_loop()
-                await loop.run_in_executor(
+                success = await loop.run_in_executor(
                     EXECUTOR,
                     self.update_db_file,
                     vendor_slug,
                     s3_key,
                     local_path
                 )
+                if success:
+                    await self.publish_ack(vendor_slug, version)
+                    logger.info(f"ACK published for {vendor_slug} (v{version})")
+                else:
+                    logger.error("NOT publishing ACK — DB update failed")    
 
 
                 # await loop.run_in_executor(None, self.update_db_file, vendor_slug, s3_key, local_path)
@@ -97,6 +90,15 @@ class RedisListener:
             logger.error("Invalid JSON received")
         except Exception as e:
             logger.error(f"Error handling message: {e}")
+
+    async def publish_ack(self, vendor_slug, version):
+        ack = {
+            "vendor_slug": vendor_slug,
+            "version": version,
+            "status": "ready"
+        }
+        await self.redis.publish("vendor.sqlite.ack", json.dumps(ack))
+         
 
     def update_db_file(self, vendor_slug: str, s3_key: str = None, local_path: str = None):
         """
@@ -129,11 +131,12 @@ class RedisListener:
                 stale = self.cache_dir / f"{vendor_slug}.current.db{suffix}"
                 if stale.exists():
                     stale.unlink()
-                        
+            return True            
         except Exception as e:
             logger.error(f"Update failed: {e}")
             if tmp_file.exists():
                 os.remove(tmp_file)
+            return False    
 
 async def start_background_listener():
     """Entry point to run as background task."""
