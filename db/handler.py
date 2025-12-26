@@ -51,6 +51,7 @@ def lambda_handler(event, context):
     try:
         builder.create_tables()
         builder.insert_data(data)
+        builder.insert_db_version(timestamp) 
         builder.create_fts_index()
         builder.optimize_db()
     except Exception as e:

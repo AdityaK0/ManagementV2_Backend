@@ -141,6 +141,14 @@ class SQLiteBuilder:
         self.conn.commit()
 
 
+    def insert_db_version(self, version: str):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "INSERT INTO db_version (version, published_at) VALUES (?, ?)",
+            (version, datetime.utcnow().isoformat())
+        )
+        self.conn.commit()
+
     def create_fts_index(self):
         cursor = self.conn.cursor()
         for sql in FTS_SQL:

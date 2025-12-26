@@ -101,6 +101,11 @@ SCHEMA_SQL = {
             product_id INTEGER,
             PRIMARY KEY (collection_id, product_id)
         );
+    """,
+    "db_version":"""
+        CREATE TABLE IF NOT EXISTS db_version (
+        version TEXT PRIMARY KEY,
+        published_at DATETIME
     """
 }
 

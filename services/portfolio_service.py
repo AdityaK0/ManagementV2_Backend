@@ -30,6 +30,19 @@ async def get_vendor_portfolio(handle: str) -> Optional[Dict[str, Any]]:
     return await asyncio.to_thread(lambda: parse_json(row))
 
 
+async def get_meta_data(business_name: str):
+
+    async with sqlite_manager.get_db(business_name) as conn:
+        row = await asyncio.to_thread(
+            lambda: conn.execute(
+                "SELECT version FROM db_version LIMIT 1"
+            ).fetchone()
+        )
+
+    if not row:
+        return {"version": None}
+
+    return {"version": row["version"]}
 # import sqlite3
 # import json
 # from typing import Dict, Any, Optional
