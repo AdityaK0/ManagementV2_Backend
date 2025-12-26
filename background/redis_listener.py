@@ -24,11 +24,6 @@ class RedisListener:
             socket_timeout=None
         )
 
-        # self.redis_kv = redis.from_url(
-        #     self.redis_url,
-        #     decode_responses=True,
-        #     socket_timeout=5,
-        # )
 
         
         # Ensure cache dir exists
@@ -83,7 +78,7 @@ class RedisListener:
                     s3_key,
                     local_path
                 )
-                self.update_version_file(vendor_slug, version)
+                
                 if success:
                     logger.info(f"Updating DB Started .....")
 
@@ -138,6 +133,7 @@ class RedisListener:
                 stale = self.cache_dir / f"{vendor_slug}.current.db{suffix}"
                 if stale.exists():
                     stale.unlink()
+            self.update_version_file(vendor_slug, version)        
             return True            
         except Exception as e:
             logger.error(f"Update failed: {e}")
