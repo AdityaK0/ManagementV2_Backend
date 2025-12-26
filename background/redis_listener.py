@@ -142,14 +142,14 @@ class RedisListener:
                 stale = self.cache_dir / f"{vendor_slug}.current.db{suffix}"
                 if stale.exists():
                     stale.unlink()
-            if version: 
-                output_dir: str = os.environ.get("SQLITE_CACHE_DIR", "../sqlite_cache")
-                path = Path(output_dir) / f"{vendor_slug}.version"
-                tmp = Path(str(path) + ".tmp")
+            if version:
+                version_path = current_file.with_suffix(".version")
+                tmp_version = version_path.with_suffix(".version.tmp")
 
-                with open(tmp, "w") as f:
-                    f.write(version)
-                os.replace(tmp, path)
+                with open(tmp_version, "w") as f:
+                    f.write(str(version))
+
+                os.replace(tmp_version, version_path)           
 
             return True            
         except Exception as e:
