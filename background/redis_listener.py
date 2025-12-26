@@ -83,6 +83,7 @@ class RedisListener:
                     s3_key,
                     local_path
                 )
+                self.update_version_file(vendor_slug, version)
                 if success:
                     logger.info(f"Updating DB Started .....")
 
@@ -143,6 +144,17 @@ class RedisListener:
             if tmp_file.exists():
                 os.remove(tmp_file)
             return False    
+
+
+    def update_version_file(self, vendor_slug: str, version: str):
+        path = f"{self.cache_dir}/{vendor_slug}.version"
+        tmp = path + ".tmp"
+
+        with open(tmp, "w") as f:
+            f.write(version)
+
+        os.replace(tmp, path)  # atomic
+        
 
 async def start_background_listener():
     """Entry point to run as background task."""

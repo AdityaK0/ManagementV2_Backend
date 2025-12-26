@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException,Response
 from services.portfolio_service import get_vendor_portfolio,get_meta_data
+import os
+import aiofiles
 
 router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
 
@@ -17,12 +19,30 @@ async def public_vendor_portfolio(business_name: str,response: Response):
 
     return data
 
-@router.get("/public/{business_name}/meta/")
-async def portfolio_meta_data(business_name: str,response: Response):
-    data = await get_meta_data(business_name)
-    if not data:
-        raise HTTPException(status_code=404, detail="Portfolio not found")
 
+@router.get("/public/{business_name}/meta/")
+async def portfolio_meta_data(business_name: str, response: Response):
     response.headers["Cache-Control"] = "no-store"
 
-    return data
+    path = os.path.join(
+        os.environ.get("SQLITE_CACHE_DIR", "../sqlite_cache"),
+        f"{business_name}.version"
+    )
+
+    try:
+        async with aiofiles.open(path, "r") as f:
+            version = (await f.read()).strip()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Meta not available")
+
+    return {"version": version}
+
+# @router.get("/public/{business_name}/meta/")
+# async def portfolio_meta_data(business_name: str,response: Response):
+#     data = await get_meta_data(business_name)
+#     if not data:
+#         raise HTTPException(status_code=404, detail="Portfolio not found")
+
+#     response.headers["Cache-Control"] = "no-store"
+
+#     return data
