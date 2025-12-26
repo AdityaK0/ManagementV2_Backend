@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query,Response
 from typing import Union
 from services.product_service import get_vendor_products,get_vendor_product_detail,get_vendor_product_categories
 
@@ -8,17 +8,26 @@ router = APIRouter(prefix="/api/portfolio", tags=["products"])
 @router.get("/public/{business_name}/products/")
 async def public_products(
     business_name: str,
+    response: Response,
     page: int = 1,
     page_size: int = 10,
     search: str = "",
     min_price: Union[float, None, str] = Query(None),
     max_price: Union[float, None, str] = Query(None),
     category: Union[str, None, str] = Query(None),
+    
 ):
     # convert empty strings to None
     min_price = None if min_price in ("", None) else float(min_price)
     max_price = None if max_price in ("", None) else float(max_price)
     category = None if category in ("", None) else category
+
+
+    if page == 1 and page_size == 10:
+        response.headers["Cache-Control"] = (
+            "public, max-age=300, stale-while-revalidate=600"
+        )
+
 
     return await get_vendor_products(
         business_name,
