@@ -142,6 +142,7 @@ class RedisListener:
                 stale = self.cache_dir / f"{vendor_slug}.current.db{suffix}"
                 if stale.exists():
                     stale.unlink()
+                    
             version_path = self.cache_dir / f"{vendor_slug}.version"
             tmp_version = self.cache_dir / f"{vendor_slug}.version.tmp"
 
