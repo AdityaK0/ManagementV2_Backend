@@ -143,7 +143,14 @@ class RedisListener:
                 if stale.exists():
                     stale.unlink()
             if version: 
-                self.update_version_file(vendor_slug, str(version))        
+                output_dir: str = os.environ.get("SQLITE_CACHE_DIR", "../sqlite_cache")
+                path = Path(output_dir) / f"{vendor_slug}.version"
+                tmp = Path(str(path) + ".tmp")
+
+                with open(tmp, "w") as f:
+                    f.write(version)
+                os.replace(tmp, path)
+
             return True            
         except Exception as e:
             logger.error(f"Update failed: {e}")
@@ -151,19 +158,6 @@ class RedisListener:
                 os.remove(tmp_file)
             return False    
 
-
-    def update_version_file(self, vendor_slug, version):
-        logger.error(f"[DEBUG] Writing version file for {vendor_slug} at {self.cache_dir}")
-        output_dir: str = os.environ.get("SQLITE_CACHE_DIR", "../sqlite_cache")
-        path = Path(output_dir) / f"{vendor_slug}.version"
-        tmp = Path(str(path) + ".tmp")
-
-        with open(tmp, "w") as f:
-            f.write(version)
-
-        os.replace(tmp, path)
-
-        logger.error(f"[DEBUG] Version file written: {path}")
 
         
 

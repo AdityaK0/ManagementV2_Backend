@@ -37,6 +37,7 @@ def build_local(
         db_params = {}
 
     reader = PostgresReader(**db_params)
+    timestamp = str(int(time.time()))
 
     try:
         data = reader.fetch_vendor_data(vendor_slug)
@@ -61,6 +62,7 @@ def build_local(
     try:
         builder.create_tables()
         builder.insert_data(data)
+        builder.insert_db_version(timestamp)
         builder.create_fts_index()
         builder.optimize_db()
 
@@ -83,6 +85,19 @@ def build_local(
         p = f"{final_path}{ext}"
         if os.path.exists(p):
             os.remove(p)
+
+
+    version_path = os.path.join(
+        output_dir,
+        f"{vendor_slug}.version"
+    )
+    tmp_version_path = version_path + ".tmp"
+
+    with open(tmp_version_path, "w") as f:
+        f.write(timestamp)
+
+    os.replace(tmp_version_path, version_path)  # ✅ atomic & correct
+    logger.info(f"Version file updated → {version_path}")    
 
     # ------------------
     # 5. REDIS EVENT
