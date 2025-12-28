@@ -18,6 +18,7 @@ def get_meta(business_name: str) -> str:
 
     if META_DIR:
         print("read from ram based file")
+        print(META_DIR,"this is the meta directory we have")
         path = os.path.join(META_DIR, f"{business_name}.version")
     else:
         print("read from disk")
