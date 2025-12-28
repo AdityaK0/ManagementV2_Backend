@@ -19,7 +19,7 @@ class RedisListener:
         self.redis_url = os.environ.get("REDIS_URL", "redis://localhost:6380")
         self.s3_bucket = os.environ.get("S3_BUCKET_NAME")
         self.cache_dir = Path(os.environ.get("SQLITE_CACHE_DIR", "/tmp/sqlite_cache"))
-        self.meta_dir = Path(os.environ.get("META_DIR"))
+        self.meta_dir = Path(os.environ.get("META_DIR")) if os.environ.get("META_DIR") else None
         self.redis = redis.from_url(
             self.redis_url,
             decode_responses=True,
@@ -127,7 +127,7 @@ class RedisListener:
             logger.info(f"Version file updated → {version_path}")  
 
             # ram based file update '
-            logger.info("Updating RAM based file...",self.meta_dir)
+            logger.info("Updating RAM based file...")
             if self.meta_dir:
                 version_path = self.meta_dir / f"{vendor_slug}.version"
                 tmp_version = self.meta_dir / f"{vendor_slug}.version.tmp"   
