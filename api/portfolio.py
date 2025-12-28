@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException,Response
-from services.portfolio_service import get_vendor_portfolio,get_meta_data
-import os
-import aiofiles
+from services.portfolio_service import get_vendor_portfolio
+# from services.utils import get_meta
 
 router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
 
@@ -36,6 +35,15 @@ async def portfolio_meta_data(business_name: str, response: Response):
         raise HTTPException(status_code=404, detail="Meta not available")
 
     return {"version": version}
+
+
+# @router.get("/public/{business_name}/meta/")
+# async def portfolio_meta_data(business_name: str, response: Response):
+#     response.headers["Cache-Control"] = "no-store"
+#     version = get_meta(business_name)
+#     return {"version": version}
+
+
 
 # @router.get("/public/{business_name}/meta/")
 # async def portfolio_meta_data(business_name: str,response: Response):
