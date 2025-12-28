@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     # SQLite cache directory
     SQLITE_CACHE_DIR: str = "../sqlite_cache"
+    META_DIR: str | None = None
 
     # S3 / AWS
     S3_BUCKET_NAME: str | None = None

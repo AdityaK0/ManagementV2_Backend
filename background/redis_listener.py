@@ -13,11 +13,13 @@ EXECUTOR = ThreadPoolExecutor(max_workers=1)
 
 logger = logging.getLogger("redis_listener")
 
+
 class RedisListener:
     def __init__(self):
         self.redis_url = os.environ.get("REDIS_URL", "redis://localhost:6380")
         self.s3_bucket = os.environ.get("S3_BUCKET_NAME")
         self.cache_dir = Path(os.environ.get("SQLITE_CACHE_DIR", "/tmp/sqlite_cache"))
+        self.meta_dir = Path(os.environ.get("META_DIR"))
         self.redis = redis.from_url(
             self.redis_url,
             decode_responses=True,
@@ -71,14 +73,6 @@ class RedisListener:
             if vendor_slug:
                 # Run blocking download/copy in executor
                 loop = asyncio.get_event_loop()
-                # success = await loop.run_in_executor(
-                #     EXECUTOR,
-                #     self.update_db_file,
-                #     vendor_slug,
-                #     s3_key,
-                #     local_path,
-                #     version
-                # )
                 await loop.run_in_executor(
                     EXECUTOR,
                     self.update_db_file,
@@ -87,24 +81,6 @@ class RedisListener:
                     local_path,
                     str(version)
                 )
-                
-                # if success:
-                #     logger.info(f"Updating DB Started .....")
-
-                #     # await self.redis_kv.setex(
-                #     #     f"vendor:sqlite:ACK:{vendor_slug}",
-                #     #     120,
-                #     #     "1"
-                #     # )
-                #     # logger.info(
-                #     #     f"ACK KEY SET → vendor:sqlite:ACK:{vendor_slug}"
-                #     # )
-
-                # else:
-                #     logger.error("DB update failed")    
-
-
-                # await loop.run_in_executor(None, self.update_db_file, vendor_slug, s3_key, local_path)
                 
         except json.JSONDecodeError:
             logger.error("Invalid JSON received")
@@ -115,8 +91,6 @@ class RedisListener:
         """
         Updates the local DB file from S3 OR a local source path.
         """
-        # target_file = self.cache_dir / f"{vendor_slug}.db"
-        # tmp_file = self.cache_dir / f"{vendor_slug}.db.tmp"
 
         current_file = self.cache_dir / f"{vendor_slug}.current.db"
         tmp_file = self.cache_dir / f"{vendor_slug}.{int(time.time())}.db"
@@ -150,7 +124,20 @@ class RedisListener:
                 f.write(str(version))
 
             os.replace(tmp_version, version_path)
-            logger.info(f"Version file updated → {version_path}")        
+            logger.info(f"Version file updated → {version_path}")  
+
+            # ram based file update '
+            if self.meta_dir:
+                version_path = self.meta_dir / f"{vendor_slug}.version"
+                tmp_version = self.meta_dir / f"{vendor_slug}.version.tmp"   
+                
+                with open(tmp_version, "w") as f:
+                    f.write(str(version))
+
+                os.replace(tmp_version, version_path)
+                logger.info(f"Version file updated (RAM) → {version_path}")  
+
+
 
             return True            
         except Exception as e:
