@@ -15,11 +15,13 @@ def get_meta(business_name: str) -> str:
     Reads vendor version from META_DIR (RAM/tmpfs) if configured,
     otherwise falls back to disk.
     """
+    print("BUSINESS_NAME =", repr(business_name))
+    print("META_DIR =", META_DIR)
 
     if META_DIR:
         print("read from ram based file")
         print(META_DIR,"this is the meta directory we have")
-        path = os.path.join(META_DIR, f"{business_name}.version")
+        path = os.path.join(META_DIR,f"{business_name}.version")
     else:
         print("read from disk")
         path = os.path.join(SQLITE_CACHE_DIR, f"{business_name}.version")
