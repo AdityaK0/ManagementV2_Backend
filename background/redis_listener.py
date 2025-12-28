@@ -127,16 +127,16 @@ class RedisListener:
             logger.info(f"Version file updated → {version_path}")  
 
             # ram based file update '
-            logger.info("Updating RAM based file...")
-            if self.meta_dir:
-                version_path = self.meta_dir / f"{vendor_slug}.version"
-                tmp_version = self.meta_dir / f"{vendor_slug}.version.tmp"   
+            # logger.info("Updating RAM based file...")
+            # if self.meta_dir:
+            #     version_path = self.meta_dir / f"{vendor_slug}.version"
+            #     tmp_version = self.meta_dir / f"{vendor_slug}.version.tmp"   
                 
-                with open(tmp_version, "w") as f:
-                    f.write(str(version))
+            #     with open(tmp_version, "w") as f:
+            #         f.write(str(version))
 
-                os.replace(tmp_version, version_path)
-                logger.info(f"Version file updated (RAM) → {version_path}")  
+            #     os.replace(tmp_version, version_path)
+            #     logger.info(f"Version file updated (RAM) → {version_path}")  
 
 
 
