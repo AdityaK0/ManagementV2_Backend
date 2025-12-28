@@ -26,10 +26,7 @@ async def public_vendor_portfolio(business_name: str,response: Response):
 async def portfolio_meta_data(business_name: str, response: Response):
     response.headers["Cache-Control"] = "no-store"
 
-    path = os.path.join(
-        os.environ.get("SQLITE_CACHE_DIR", "../sqlite_cache"),
-        f"{business_name}.version"
-    )
+    path = os.path.join("../sqlite_cache",f"{business_name}.version")
 
     try:
         with open(path, "r") as f:
