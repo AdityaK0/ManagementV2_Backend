@@ -25,7 +25,7 @@ async def public_products(
 
     if page == 1 and page_size == 10:
         response.headers["Cache-Control"] = (
-             "public, max-age=30, s-maxage=300, stale-while-revalidate=60"
+             "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
             # "public, max-age=0, s-maxage=300"
         )
 
@@ -61,7 +61,7 @@ async def public_product_detail(business_name: str, product_id: int,response: Re
 @router.get("/public/{business_name}/categories/")
 async def get_vendor_categories(business_name: str,response: Response):
     response.headers["Cache-Control"] = (
-         "public, max-age=30, s-maxage=300, stale-while-revalidate=60"
+         "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
     #    "public, max-age=30, s-maxage=300, stale-while-revalidate=60"
     )
     return await get_vendor_product_categories(
