@@ -149,7 +149,15 @@ def fetch_portfolio_full_json(self, vendor_slug: str):
         """, (vendor_id,))
         addresses = cursor.fetchall()
 
-        # 5) Build JSON
+        # 5) Vendor Stats
+        cursor.execute("""
+            SELECT *
+            FROM vendors_vendorstats
+            WHERE vendor_id = %s
+        """, (vendor_id,))
+        vendorstats = cursor.fetchone()
+
+        # 6) Build JSON
         response = {
             "id": portfolio_id,
             "business_name": vendor["business_name"],
@@ -183,6 +191,7 @@ def fetch_portfolio_full_json(self, vendor_slug: str):
             "google_maps_url": vendor["google_maps_url"],
             "address": addresses,
             "whatsapp_number": vendor["whatsapp_number"],
+            "products_count":vendorstats['total_products'],
             "social_links": {
                 "facebook": portfolio["facebook_url"],
                 "instagram": portfolio["instagram_url"],
