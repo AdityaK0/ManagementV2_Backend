@@ -70,7 +70,8 @@ def fetch_portfolio_full_json(self, vendor_slug: str):
         cursor.execute("""
             SELECT 
                 id, business_name, handle, business_description,
-                business_email, business_phone, whatsapp_number, google_maps_url, handle
+                business_email, business_phone, whatsapp_number, google_maps_url, handle,
+                business_role, business_categories, business_hours,business_started_year
             FROM vendors_vendor
             WHERE handle = %s
         """, (vendor_slug,))
@@ -175,6 +176,10 @@ def fetch_portfolio_full_json(self, vendor_slug: str):
             "gallery_images": portfolio["gallery_images"] or [],
             "contact_email": vendor["business_email"],
             "contact_phone": vendor["business_phone"],
+            "business_started_year": vendor["business_started_year"],
+            "business_role": vendor["business_role"],
+            "business_categories":vendor["business_categories"],
+            "business_hours":vendor["business_hours"],
             "google_maps_url": vendor["google_maps_url"],
             "address": addresses,
             "whatsapp_number": vendor["whatsapp_number"],
