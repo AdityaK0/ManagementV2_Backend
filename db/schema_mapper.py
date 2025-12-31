@@ -44,7 +44,7 @@ SCHEMA_SQL = {
             name TEXT,
             description TEXT,
             price REAL,
-            cost_price REAL,
+       
 
             stock_quantity INTEGER,
             min_stock_level INTEGER,
