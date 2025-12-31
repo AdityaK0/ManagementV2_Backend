@@ -23,10 +23,10 @@ async def public_products(
     category = None if category in ("", None) else category
 
 
-    if page == 1 and page_size == 10:
+    # Only cache if page 1, default size, AND no filters are applied
+    if page == 1 and page_size == 10 and not search and not min_price and not max_price and not category:
         response.headers["Cache-Control"] = (
              "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
-            # "public, max-age=0, s-maxage=300"
         )
 
 
