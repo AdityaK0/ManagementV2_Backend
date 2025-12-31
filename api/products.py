@@ -28,6 +28,11 @@ async def public_products(
         response.headers["Cache-Control"] = (
              "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
         )
+    else: # will need to have plan for this filter base and all cant make load on
+        # cloudflare cause if filter will. be cached the after update 
+        # the filter result will not be updated so will think
+        response.headers["Cache-Control"] = "no-store"    
+
 
 
     return await get_vendor_products(
