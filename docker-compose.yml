@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: portfolio_prod
+    restart: always
+    environment:
+      POSTGRES_DB: portfolio_prod
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: K5tw3dc?7r)c-[7LoAzH3vHE[(yE
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+
+
+volumes:
+  postgres_data:

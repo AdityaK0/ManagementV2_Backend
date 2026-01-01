@@ -7,114 +7,184 @@ try:
 except ImportError:
     import json  # Fallback to stdlib
 
+from db.postgres_read_pool import get_pg_pool
 
-async def get_vendor_collections(handle: str):
+async def get_vendor_collections(
+    handle: str,
+    version: str | None = None,
+):
+    pool = get_pg_pool()
 
-    async with sqlite_manager.get_db(handle) as conn:
+    def db_call():
+        conn = pool.getconn()
+        try:
+            with conn.cursor() as cur:
 
-        # 1) Get portfolio ID (OFF event loop)
-        row = await asyncio.to_thread(
-            lambda: conn.execute(
-                "SELECT id FROM portfolio LIMIT 1"
-            ).fetchone()
-        )
+                # 1️⃣ Resolve vendor_version_id
+                if version:
+                    cur.execute("""
+                        SELECT vv.id
+                        FROM vendor_version vv
+                        JOIN vendor v ON v.id = vv.vendor_id
+                        WHERE v.handle = %s
+                          AND vv.version = %s
+                        LIMIT 1
+                    """, (handle, version))
+                else:
+                    cur.execute("""
+                        SELECT vv.id
+                        FROM vendor_version vv
+                        JOIN vendor v ON v.id = vv.vendor_id
+                        WHERE v.handle = %s
+                        ORDER BY
+                            vv.is_active DESC,
+                            vv.published_at DESC
+                        LIMIT 1
+                    """, (handle,))
 
-        if not row:
-            return None
+                row = cur.fetchone()
+                if not row:
+                    return None  # vendor not found
 
-        pid = row["id"]
+                vendor_version_id = row[0]
 
-        # 2) Fetch collections (OFF event loop)
-        collections = await asyncio.to_thread(
-            lambda: conn.execute(
-                """
-                SELECT *
-                FROM portfolio_collection
-                WHERE portfolio_id = ?
-                  AND is_active = 1
-                ORDER BY "order" ASC, id ASC
-                """,
-                (pid,)
-            ).fetchall()
-        )
+                # 2️⃣ Fetch collections
+                cur.execute("""
+                    SELECT id, name, slug, description, cover_image,
+                           sort_order, is_featured
+                    FROM portfolio_collection
+                    WHERE vendor_version_id = %s
 
-        if not collections:
-            return []
+                    ORDER BY sort_order ASC, id ASC
+                """, (vendor_version_id,))
 
-        coll_ids = [c["id"] for c in collections]
-        placeholders = ",".join("?" * len(coll_ids))
+                collections = cur.fetchall()
+                if not collections:
+                    return []
 
-        # 3) Fetch product mappings (OFF event loop)
-        map_rows = await asyncio.to_thread(
-            lambda: conn.execute(
-                f"""
-                SELECT collection_id, product_id
-                FROM portfolio_collection_product
-                WHERE collection_id IN ({placeholders})
-                """,
-                coll_ids
-            ).fetchall()
-        )
+                collection_ids = [c[0] for c in collections]
 
-    # 4) Build response (OFF event loop)
-    def build_response(collections, map_rows):
-        product_map = {}
-        for m in map_rows:
-            product_map.setdefault(m["collection_id"], []).append(m["product_id"])
+                # 3️⃣ Fetch product mappings
+                cur.execute("""
+                    SELECT collection_id, product_id
+                    FROM portfolio_collection_product
+                    WHERE collection_id = ANY(%s)
+                    ORDER BY sort_order ASC
+                """, (collection_ids,))
 
-        final = []
-        for c in collections:
-            cd = dict(c)
-            cd["product_ids"] = product_map.get(c["id"], [])
-            final.append(cd)
+                map_rows = cur.fetchall()
 
-        return final
+                # 4️⃣ Build response
+                product_map = {}
+                for cid, pid in map_rows:
+                    product_map.setdefault(cid, []).append(pid)
 
-    return await asyncio.to_thread(
-        lambda: build_response(collections, map_rows)
-    )
+                result = []
+                for c in collections:
+                    (
+                        cid,
+                        name,
+                        slug,
+                        description,
+                        cover_image,
+                        sort_order,
+                        is_featured,
+                    ) = c
+
+                    result.append({
+                        "id": cid,
+                        "name": name,
+                        "slug": slug,
+                        "description": description,
+                        "cover_image": cover_image,
+                        "sort_order": sort_order,
+                        "is_featured": is_featured,
+                        "product_ids": product_map.get(cid, []),
+                    })
+
+                return result
+
+        finally:
+            pool.putconn(conn)
+
+    return await asyncio.to_thread(db_call)
 
 
-async def get_vendor_collection_details(handle: str, collection_id: int):
-    async with sqlite_manager.get_db(handle) as conn:
 
-        # Fetch collection (OFF event loop)
-        collection = await asyncio.to_thread(
-            lambda: conn.execute(
-                """
-                SELECT *
-                FROM portfolio_collection
-                WHERE id = ?
-                  AND is_active = 1
-                """,
-                (collection_id,)
-            ).fetchone()
-        )
+async def get_vendor_collection_details(
+    handle: str,
+    collection_id: int,
+    version: str | None = None,
+):
+    pool = get_pg_pool()
 
-        if not collection:
-            return None
+    def db_call():
+        conn = pool.getconn()
+        try:
+            with conn.cursor() as cur:
 
-        # Fetch product mappings (OFF event loop)
-        map_rows = await asyncio.to_thread(
-            lambda: conn.execute(
-                """
-                SELECT product_id
-                FROM portfolio_collection_product
-                WHERE collection_id = ?
-                """,
-                (collection_id,)
-            ).fetchall()
-        )
+                # 1️⃣ Resolve vendor_version_id
+                if version:
+                    cur.execute("""
+                        SELECT vv.id
+                        FROM vendor_version vv
+                        JOIN vendor v ON v.id = vv.vendor_id
+                        WHERE v.handle = %s
+                          AND vv.version = %s
+                        LIMIT 1
+                    """, (handle, version))
+                else:
+                    cur.execute("""
+                        SELECT vv.id
+                        FROM vendor_version vv
+                        JOIN vendor v ON v.id = vv.vendor_id
+                        WHERE v.handle = %s
+                        ORDER BY
+                            vv.is_active DESC,
+                            vv.published_at DESC
+                        LIMIT 1
+                    """, (handle,))
 
-    # Build response (OFF event loop)
-    def build_collection(collection, map_rows):
-        collection_dict = dict(collection)
-        collection_dict["product_ids"] = [r["product_id"] for r in map_rows]
-        return collection_dict
+                row = cur.fetchone()
+                if not row:
+                    return None  # vendor not found
 
-    return await asyncio.to_thread(
-        lambda: build_collection(collection, map_rows)
-    )
+                vendor_version_id = row[0]
+
+                # 2️⃣ Fetch collection
+                cur.execute("""
+                    SELECT *
+                    FROM portfolio_collection
+                    WHERE id = %s
+                      AND vendor_version_id = %s
+                    LIMIT 1
+                """, (collection_id, vendor_version_id))
+
+                collection = cur.fetchone()
+                if not collection:
+                    return None
+
+                col_columns = [d[0] for d in cur.description]
+                collection_dict = dict(zip(col_columns, collection))
+
+                # 3️⃣ Fetch product mappings
+                cur.execute("""
+                    SELECT product_id
+                    FROM portfolio_collection_product
+                    WHERE collection_id = %s
+                    ORDER BY sort_order ASC
+                """, (collection_id,))
+
+                product_ids = [r[0] for r in cur.fetchall()]
+
+                collection_dict["product_ids"] = product_ids
+                return collection_dict
+
+        finally:
+            pool.putconn(conn)
+
+    return await asyncio.to_thread(db_call)
+
 
 
 # from services.sqlite_manager import sqlite_manager

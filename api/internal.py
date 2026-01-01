@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import logging
-from db.local_runner import build_local
+from db.local_runner import run_local
 
 router = APIRouter()
 logger = logging.getLogger("internal_api")
@@ -20,7 +20,7 @@ async def trigger_local_build(payload: BuildRequest, background_tasks: Backgroun
     # Validating slug could go here
     
     # Run build in background
-    background_tasks.add_task(build_local, payload.vendor_slug)
+    background_tasks.add_task(run_local, payload.vendor_slug)
     
     return {
         "status": "accepted", 

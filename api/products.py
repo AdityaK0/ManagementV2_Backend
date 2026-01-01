@@ -15,25 +15,26 @@ async def public_products(
     min_price: Union[float, None, str] = Query(None),
     max_price: Union[float, None, str] = Query(None),
     category: Union[str, None, str] = Query(None),
-    
+    v: str | None = None,   # 👈 version
 ):
-    # convert empty strings to None
     min_price = None if min_price in ("", None) else float(min_price)
     max_price = None if max_price in ("", None) else float(max_price)
     category = None if category in ("", None) else category
 
-
-    # Only cache if page 1, default size, AND no filters are applied
-    if page == 1 and page_size == 10 and not search and not min_price and not max_price and not category:
+    if (
+        page == 1
+        and page_size == 10
+        and not search
+        and not min_price
+        and not max_price
+        and not category
+        and not v
+    ):
         response.headers["Cache-Control"] = (
-             "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
+            "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
         )
-    else: # will need to have plan for this filter base and all cant make load on
-        # cloudflare cause if filter will. be cached the after update 
-        # the filter result will not be updated so will think
-        response.headers["Cache-Control"] = "no-store"    
-
-
+    else:
+        response.headers["Cache-Control"] = "no-store"
 
     return await get_vendor_products(
         business_name,
@@ -43,33 +44,46 @@ async def public_products(
         min_price,
         max_price,
         category,
+        v,
     )
-
-
-
-
 
 
 
 @router.get("/public/{business_name}/products/{product_id}/")
-async def public_product_detail(business_name: str, product_id: int,response: Response):
-    """
-    Fetch a single product detail by vendor slug (business_name) and product_id.
-    """
+async def public_product_detail(
+    business_name: str,
+    product_id: int,
+    response: Response,
+    v: str | None = None,
+):
     response.headers["Cache-Control"] = "no-store"
-    return await get_vendor_product_detail(
+
+    data = await get_vendor_product_detail(
         business_name,
-        product_id
+        product_id,
+        version=v
     )
+
+    if not data:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    return data
+
     
 
 @router.get("/public/{business_name}/categories/")
-async def get_vendor_categories(business_name: str,response: Response):
+async def get_vendor_categories(
+    business_name: str,
+    response: Response,
+    v: str | None = None
+):
     response.headers["Cache-Control"] = (
-         "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
-    #    "public, max-age=30, s-maxage=300, stale-while-revalidate=60"
+        "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
     )
+
     return await get_vendor_product_categories(
-        business_name
+        business_name,
+        version=v
     )
+
     
