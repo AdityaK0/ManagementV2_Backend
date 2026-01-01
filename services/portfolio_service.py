@@ -7,50 +7,42 @@ except ImportError:
     import json
 
 from db.postgres_read_pool import get_pg_pool
+from psycopg2.extensions import connection
 
 
-async def get_vendor_portfolio(
+def get_vendor_portfolio(
+    conn: connection,
     handle: str,
-    version: str | None = None
+    version: str | None = None,
 ) -> Optional[Dict[str, Any]]:
-    pool = get_pg_pool()
+    with conn.cursor() as cur:
+        if version:
+            # 🎯 Explicit version fetch (immutable)
+            cur.execute("""
+                SELECT p.snapshot
+                FROM portfolio p
+                JOIN vendor_version vv ON vv.id = p.vendor_version_id
+                JOIN vendor v ON v.id = p.vendor_id
+                WHERE v.handle = %s
+                  AND vv.version = %s
+                LIMIT 1
+            """, (handle, version))
+        else:
+            # 🧠 Fallback to best version
+            cur.execute("""
+                SELECT p.snapshot
+                FROM portfolio p
+                JOIN vendor_version vv ON vv.id = p.vendor_version_id
+                JOIN vendor v ON v.id = p.vendor_id
+                WHERE v.handle = %s
+                ORDER BY
+                    vv.is_active DESC,
+                    vv.published_at DESC
+                LIMIT 1
+            """, (handle,))
 
-    def db_call():
-        conn = pool.getconn()
-        try:
-            with conn.cursor() as cur:
-                if version:
-                    # 🎯 Explicit version fetch (immutable)
-                    cur.execute("""
-                        SELECT p.snapshot
-                        FROM portfolio p
-                        JOIN vendor_version vv ON vv.id = p.vendor_version_id
-                        JOIN vendor v ON v.id = p.vendor_id
-                        WHERE v.handle = %s
-                          AND vv.version = %s
-                        LIMIT 1
-                    """, (handle, version))
-                else:
-                    # 🧠 Fallback to best version
-                    cur.execute("""
-                        SELECT p.snapshot
-                        FROM portfolio p
-                        JOIN vendor_version vv ON vv.id = p.vendor_version_id
-                        JOIN vendor v ON v.id = p.vendor_id
-                        WHERE v.handle = %s
-                        ORDER BY
-                            vv.is_active DESC,
-                            vv.published_at DESC
-                        LIMIT 1
-                    """, (handle,))
-
-                row = cur.fetchone()
-                return row[0] if row else None
-
-        finally:
-            pool.putconn(conn)
-
-    return await asyncio.to_thread(db_call)
+        row = cur.fetchone()
+        return row[0] if row else None
 
 
 def get_meta_data(handle: str, conn) -> dict:

@@ -9,13 +9,15 @@ from db.connection import get_db
 router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
 
 
+
 @router.get("/public/{business_name}/")
-async def public_vendor_portfolio(
+def public_vendor_portfolio(
     business_name: str,
     response: Response,
-    v: str | None = None, 
+    v: str | None = None,
+    db: connection = Depends(get_db),
 ):
-    data = await get_vendor_portfolio(business_name,v)
+    data = get_vendor_portfolio(db, business_name, v)
     if not data:
         raise HTTPException(status_code=404, detail="Portfolio not found")
 
@@ -23,7 +25,6 @@ async def public_vendor_portfolio(
         "public, max-age=300, s-maxage=300, stale-while-revalidate=60"
     )
     return data
-
 
 @router.get("/public/{business_name}/meta/")
 def portfolio_meta_data(
