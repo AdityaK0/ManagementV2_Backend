@@ -33,7 +33,7 @@ def publish_vendor(
     vendor_id = vendor["id"]
 
     snapshot_json = json.dumps(data["portfolio"])
-    
+
     writer.upsert_vendor(vendor)
 
     # 2️⃣ WRITE
@@ -86,6 +86,8 @@ def publish_vendor(
             "sku",
             "stock_quantity",
             "primary_image",
+            "gender",
+            "description",
             "image_urls",
             "sizes",
             "is_active",
@@ -105,6 +107,8 @@ def publish_vendor(
                 p.get("sku"),
                 p.get("stock_quantity", 0),
                 p.get("primary_image"),
+                p.get("gender"),
+                p.get("description"),
                 json.dumps(p.get("image_urls")),
                 json.dumps(p.get("sizes")),
                 p.get("is_active", True),

@@ -100,10 +100,10 @@ def get_vendor_products(
         for r in rows:
             p = dict(zip(columns, r))
 
-            try:
-                p["sizes"] = json.loads(p.get("sizes") or "[]")
-            except Exception:
-                p["sizes"] = []
+            # try:
+            #     p["sizes"] = json.loads(p.get("sizes") or "[]")
+            # except Exception:
+            #     p["sizes"] = []
 
             results.append(p)
 

@@ -62,6 +62,8 @@ class PostgresReader:
                 "sku": p["sku"],
                 "stock_quantity": p["stock_quantity"] or 0,
                 "primary_image": p["primary_image"],
+                "gender":p["gender"],
+                "description":p["description"],
                 "image_urls": safe_json(p["image_urls"]) or [],
                 "sizes": safe_json(p["sizes"]),
                 "is_active": p["is_active"],

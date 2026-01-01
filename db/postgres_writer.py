@@ -55,7 +55,7 @@ class PostgresWriter:
             cur.execute("""
                 SELECT id, product_uid
                 FROM product
-                WHERE vendor_version_id = %s
+                WHERE vendor_version_id = %s AND is_active=true
             """, (vendor_version_id,))
             return {uid: pid for pid, uid in cur.fetchall()}
 
