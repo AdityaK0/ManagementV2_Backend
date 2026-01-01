@@ -31,7 +31,7 @@ def public_products(
         and not min_price
         and not max_price
         and not category
-        and not v
+        #and not v
     ):
         response.headers["Cache-Control"] = (
             "public, max-age=300, s-maxage=300, stale-while-revalidate=60"
