@@ -1,190 +1,163 @@
-import asyncio
-from services.sqlite_manager import sqlite_manager
+from psycopg2.extensions import connection
 
-# OPT-3: Use ujson for 20-40% faster JSON parsing (if needed in future)
-try:
-    import ujson as json
-except ImportError:
-    import json  # Fallback to stdlib
-
-from db.postgres_read_pool import get_pg_pool
-
-async def get_vendor_collections(
+def get_vendor_collections(
+    conn: connection,
     handle: str,
     version: str | None = None,
 ):
-    pool = get_pg_pool()
+    with conn.cursor() as cur:
 
-    def db_call():
-        conn = pool.getconn()
-        try:
-            with conn.cursor() as cur:
+        # 1️⃣ Resolve vendor_version_id
+        if version:
+            cur.execute("""
+                SELECT vv.id
+                FROM vendor_version vv
+                JOIN vendor v ON v.id = vv.vendor_id
+                WHERE v.handle = %s
+                  AND vv.version = %s
+                LIMIT 1
+            """, (handle, version))
+        else:
+            cur.execute("""
+                SELECT vv.id
+                FROM vendor_version vv
+                JOIN vendor v ON v.id = vv.vendor_id
+                WHERE v.handle = %s
+                ORDER BY
+                    vv.is_active DESC,
+                    vv.published_at DESC
+                LIMIT 1
+            """, (handle,))
 
-                # 1️⃣ Resolve vendor_version_id
-                if version:
-                    cur.execute("""
-                        SELECT vv.id
-                        FROM vendor_version vv
-                        JOIN vendor v ON v.id = vv.vendor_id
-                        WHERE v.handle = %s
-                          AND vv.version = %s
-                        LIMIT 1
-                    """, (handle, version))
-                else:
-                    cur.execute("""
-                        SELECT vv.id
-                        FROM vendor_version vv
-                        JOIN vendor v ON v.id = vv.vendor_id
-                        WHERE v.handle = %s
-                        ORDER BY
-                            vv.is_active DESC,
-                            vv.published_at DESC
-                        LIMIT 1
-                    """, (handle,))
+        row = cur.fetchone()
+        if not row:
+            return None  # vendor not found
 
-                row = cur.fetchone()
-                if not row:
-                    return None  # vendor not found
+        vendor_version_id = row[0]
 
-                vendor_version_id = row[0]
+        # 2️⃣ Fetch collections
+        cur.execute("""
+            SELECT id, name, slug, description, cover_image,
+                   sort_order, is_featured
+            FROM portfolio_collection
+            WHERE vendor_version_id = %s
+            ORDER BY sort_order ASC, id ASC
+        """, (vendor_version_id,))
 
-                # 2️⃣ Fetch collections
-                cur.execute("""
-                    SELECT id, name, slug, description, cover_image,
-                           sort_order, is_featured
-                    FROM portfolio_collection
-                    WHERE vendor_version_id = %s
+        collections = cur.fetchall()
+        if not collections:
+            return []
 
-                    ORDER BY sort_order ASC, id ASC
-                """, (vendor_version_id,))
+        collection_ids = [c[0] for c in collections]
 
-                collections = cur.fetchall()
-                if not collections:
-                    return []
+        # 3️⃣ Fetch product mappings
+        cur.execute("""
+            SELECT collection_id, product_id
+            FROM portfolio_collection_product
+            WHERE collection_id = ANY(%s)
+            ORDER BY sort_order ASC
+        """, (collection_ids,))
 
-                collection_ids = [c[0] for c in collections]
+        map_rows = cur.fetchall()
 
-                # 3️⃣ Fetch product mappings
-                cur.execute("""
-                    SELECT collection_id, product_id
-                    FROM portfolio_collection_product
-                    WHERE collection_id = ANY(%s)
-                    ORDER BY sort_order ASC
-                """, (collection_ids,))
+        # 4️⃣ Build response
+        product_map = {}
+        for cid, pid in map_rows:
+            product_map.setdefault(cid, []).append(pid)
 
-                map_rows = cur.fetchall()
+        result = []
+        for c in collections:
+            (
+                cid,
+                name,
+                slug,
+                description,
+                cover_image,
+                sort_order,
+                is_featured,
+            ) = c
 
-                # 4️⃣ Build response
-                product_map = {}
-                for cid, pid in map_rows:
-                    product_map.setdefault(cid, []).append(pid)
+            result.append({
+                "id": cid,
+                "name": name,
+                "slug": slug,
+                "description": description,
+                "cover_image": cover_image,
+                "sort_order": sort_order,
+                "is_featured": is_featured,
+                "product_ids": product_map.get(cid, []),
+            })
 
-                result = []
-                for c in collections:
-                    (
-                        cid,
-                        name,
-                        slug,
-                        description,
-                        cover_image,
-                        sort_order,
-                        is_featured,
-                    ) = c
-
-                    result.append({
-                        "id": cid,
-                        "name": name,
-                        "slug": slug,
-                        "description": description,
-                        "cover_image": cover_image,
-                        "sort_order": sort_order,
-                        "is_featured": is_featured,
-                        "product_ids": product_map.get(cid, []),
-                    })
-
-                return result
-
-        finally:
-            pool.putconn(conn)
-
-    return await asyncio.to_thread(db_call)
+        return result
 
 
+from psycopg2.extensions import connection
 
-async def get_vendor_collection_details(
+
+def get_vendor_collection_details(
+    conn: connection,
     handle: str,
     collection_id: int,
     version: str | None = None,
 ):
-    pool = get_pg_pool()
+    with conn.cursor() as cur:
 
-    def db_call():
-        conn = pool.getconn()
-        try:
-            with conn.cursor() as cur:
+        # 1️⃣ Resolve vendor_version_id
+        if version:
+            cur.execute("""
+                SELECT vv.id
+                FROM vendor_version vv
+                JOIN vendor v ON v.id = vv.vendor_id
+                WHERE v.handle = %s
+                  AND vv.version = %s
+                LIMIT 1
+            """, (handle, version))
+        else:
+            cur.execute("""
+                SELECT vv.id
+                FROM vendor_version vv
+                JOIN vendor v ON v.id = vv.vendor_id
+                WHERE v.handle = %s
+                ORDER BY
+                    vv.is_active DESC,
+                    vv.published_at DESC
+                LIMIT 1
+            """, (handle,))
 
-                # 1️⃣ Resolve vendor_version_id
-                if version:
-                    cur.execute("""
-                        SELECT vv.id
-                        FROM vendor_version vv
-                        JOIN vendor v ON v.id = vv.vendor_id
-                        WHERE v.handle = %s
-                          AND vv.version = %s
-                        LIMIT 1
-                    """, (handle, version))
-                else:
-                    cur.execute("""
-                        SELECT vv.id
-                        FROM vendor_version vv
-                        JOIN vendor v ON v.id = vv.vendor_id
-                        WHERE v.handle = %s
-                        ORDER BY
-                            vv.is_active DESC,
-                            vv.published_at DESC
-                        LIMIT 1
-                    """, (handle,))
+        row = cur.fetchone()
+        if not row:
+            return None  # vendor not found
 
-                row = cur.fetchone()
-                if not row:
-                    return None  # vendor not found
+        vendor_version_id = row[0]
 
-                vendor_version_id = row[0]
+        # 2️⃣ Fetch collection
+        cur.execute("""
+            SELECT *
+            FROM portfolio_collection
+            WHERE id = %s
+              AND vendor_version_id = %s
+            LIMIT 1
+        """, (collection_id, vendor_version_id))
 
-                # 2️⃣ Fetch collection
-                cur.execute("""
-                    SELECT *
-                    FROM portfolio_collection
-                    WHERE id = %s
-                      AND vendor_version_id = %s
-                    LIMIT 1
-                """, (collection_id, vendor_version_id))
+        collection = cur.fetchone()
+        if not collection:
+            return None
 
-                collection = cur.fetchone()
-                if not collection:
-                    return None
+        col_columns = [d[0] for d in cur.description]
+        collection_dict = dict(zip(col_columns, collection))
 
-                col_columns = [d[0] for d in cur.description]
-                collection_dict = dict(zip(col_columns, collection))
+        # 3️⃣ Fetch product mappings
+        cur.execute("""
+            SELECT product_id
+            FROM portfolio_collection_product
+            WHERE collection_id = %s
+            ORDER BY sort_order ASC
+        """, (collection_id,))
 
-                # 3️⃣ Fetch product mappings
-                cur.execute("""
-                    SELECT product_id
-                    FROM portfolio_collection_product
-                    WHERE collection_id = %s
-                    ORDER BY sort_order ASC
-                """, (collection_id,))
+        product_ids = [r[0] for r in cur.fetchall()]
+        collection_dict["product_ids"] = product_ids
 
-                product_ids = [r[0] for r in cur.fetchall()]
-
-                collection_dict["product_ids"] = product_ids
-                return collection_dict
-
-        finally:
-            pool.putconn(conn)
-
-    return await asyncio.to_thread(db_call)
-
+        return collection_dict
 
 
 # from services.sqlite_manager import sqlite_manager

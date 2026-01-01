@@ -1,12 +1,5 @@
-import asyncio
 from typing import Optional, Dict, Any
 
-try:
-    import ujson as json
-except ImportError:
-    import json
-
-from db.postgres_read_pool import get_pg_pool
 from psycopg2.extensions import connection
 
 

@@ -1,16 +1,10 @@
 import math
-import asyncio
-from .sqlite_manager import sqlite_manager
+import json
 
-# OPT-3: Use ujson for 20-40% faster JSON parsing
-try:
-    import ujson as json
-except ImportError:
-    import json  # Fallback to stdlib
+from psycopg2.extensions import connection
 
-from db.postgres_read_pool import get_pg_pool
-
-async def get_vendor_products(
+def get_vendor_products(
+    conn: connection,
     handle: str,
     page: int,
     page_size: int,
@@ -21,253 +15,221 @@ async def get_vendor_products(
     version: str | None = None,
 ):
     offset = (page - 1) * page_size
-    pool = get_pg_pool()
 
-    def db_call():
-        conn = pool.getconn()
-        try:
-            with conn.cursor() as cur:
+    with conn.cursor() as cur:
 
-                # 1️⃣ Resolve vendor_version_id
-                if version:
-                    cur.execute("""
-                        SELECT vv.id
-                        FROM vendor_version vv
-                        JOIN vendor v ON v.id = vv.vendor_id
-                        WHERE v.handle = %s
-                          AND vv.version = %s
-                        LIMIT 1
-                    """, (handle, version))
-                else:
-                    cur.execute("""
-                        SELECT vv.id
-                        FROM vendor_version vv
-                        JOIN vendor v ON v.id = vv.vendor_id
-                        WHERE v.handle = %s
-                        ORDER BY
-                            vv.is_active DESC,
-                            vv.published_at DESC
-                        LIMIT 1
-                    """, (handle,))
+        # 1️⃣ Resolve vendor_version_id
+        if version:
+            cur.execute("""
+                SELECT vv.id
+                FROM vendor_version vv
+                JOIN vendor v ON v.id = vv.vendor_id
+                WHERE v.handle = %s
+                  AND vv.version = %s
+                LIMIT 1
+            """, (handle, version))
+        else:
+            cur.execute("""
+                SELECT vv.id
+                FROM vendor_version vv
+                JOIN vendor v ON v.id = vv.vendor_id
+                WHERE v.handle = %s
+                ORDER BY
+                    vv.is_active DESC,
+                    vv.published_at DESC
+                LIMIT 1
+            """, (handle,))
 
-                row = cur.fetchone()
-                if not row:
-                    return None
+        row = cur.fetchone()
+        if not row:
+            return None
 
-                vendor_version_id = row[0]
+        vendor_version_id = row[0]
 
-                # 2️⃣ Build filters
-                conditions = ["p.vendor_version_id = %s", "p.is_active = true"]
-                params = [vendor_version_id]
+        # 2️⃣ Build filters
+        conditions = ["p.vendor_version_id = %s", "p.is_active = true"]
+        params = [vendor_version_id]
 
-                if min_price is not None:
-                    conditions.append("p.price >= %s")
-                    params.append(min_price)
+        if min_price is not None:
+            conditions.append("p.price >= %s")
+            params.append(min_price)
 
-                if max_price is not None:
-                    conditions.append("p.price <= %s")
-                    params.append(max_price)
+        if max_price is not None:
+            conditions.append("p.price <= %s")
+            params.append(max_price)
 
-                if category:
-                    conditions.append("p.category_name = %s")
-                    params.append(category)
+        if category:
+            conditions.append("p.category_name = %s")
+            params.append(category)
 
-                if search:
-                    conditions.append("""
-                        (
-                            p.name ILIKE %s
-                            OR p.slug ILIKE %s
-                        )
-                    """)
-                    params.extend([f"%{search}%", f"%{search}%"])
-
-                where_sql = "WHERE " + " AND ".join(conditions)
-
-                # 3️⃣ Count
-                cur.execute(
-                    f"SELECT COUNT(*) FROM product p {where_sql}",
-                    params
+        if search:
+            conditions.append("""
+                (
+                    p.name ILIKE %s
+                    OR p.slug ILIKE %s
                 )
-                total = cur.fetchone()[0]
+            """)
+            params.extend([f"%{search}%", f"%{search}%"])
 
-                # 4️⃣ Fetch rows
-                cur.execute(
-                    f"""
-                    SELECT p.*
-                    FROM product p
-                    {where_sql}
-                    ORDER BY p.created_at DESC
-                    LIMIT %s OFFSET %s
-                    """,
-                    params + [page_size, offset]
-                )
-                rows = cur.fetchall()
+        where_sql = "WHERE " + " AND ".join(conditions)
 
-                # 5️⃣ Process rows
-                results = []
-                for r in rows:
-                    p = dict(zip([d[0] for d in cur.description], r))
+        # 3️⃣ Count
+        cur.execute(
+            f"SELECT COUNT(*) FROM product p {where_sql}",
+            params
+        )
+        total = cur.fetchone()[0]
 
-                    # try:
-                    #     p["images"] = json.loads(p.get("image_urls") or p.get("images") or "[]" )
-                    # except:
-                    #     p["images"] = []
+        # 4️⃣ Fetch rows
+        cur.execute(
+            f"""
+            SELECT p.*
+            FROM product p
+            {where_sql}
+            ORDER BY p.created_at DESC
+            LIMIT %s OFFSET %s
+            """,
+            params + [page_size, offset]
+        )
+        rows = cur.fetchall()
 
-                    try:
-                        p["sizes"] = json.loads(p.get("sizes") or "[]")
-                    except:
-                        p["sizes"] = []
+        # 5️⃣ Process rows
+        results = []
+        columns = [d[0] for d in cur.description]
 
-                    results.append(p)
+        for r in rows:
+            p = dict(zip(columns, r))
 
-                return {
-                    "results": results,
-                    "count": total,
-                    "total_pages": math.ceil(total / page_size),
-                    "current_page": page,
-                    "has_next": page * page_size < total,
-                    "has_previous": page > 1,
-                }
+            try:
+                p["sizes"] = json.loads(p.get("sizes") or "[]")
+            except Exception:
+                p["sizes"] = []
 
-        finally:
-            pool.putconn(conn)
+            results.append(p)
 
-    return await asyncio.to_thread(db_call)
+        return {
+            "results": results,
+            "count": total,
+            "total_pages": math.ceil(total / page_size),
+            "current_page": page,
+            "has_next": page * page_size < total,
+            "has_previous": page > 1,
+        }
 
-async def get_vendor_product_detail(
+
+def get_vendor_product_detail(
+    conn: connection,
     handle: str,
     product_id: int,
     version: str | None = None,
 ):
-    pool = get_pg_pool()
+    with conn.cursor() as cur:
 
-    def db_call():
-        conn = pool.getconn()
+        # 1️⃣ Resolve vendor_version_id
+        if version:
+            cur.execute("""
+                SELECT vv.id
+                FROM vendor_version vv
+                JOIN vendor v ON v.id = vv.vendor_id
+                WHERE v.handle = %s
+                  AND vv.version = %s
+                LIMIT 1
+            """, (handle, version))
+        else:
+            cur.execute("""
+                SELECT vv.id
+                FROM vendor_version vv
+                JOIN vendor v ON v.id = vv.vendor_id
+                WHERE v.handle = %s
+                ORDER BY
+                    vv.is_active DESC,
+                    vv.published_at DESC
+                LIMIT 1
+            """, (handle,))
+
+        row = cur.fetchone()
+        if not row:
+            return None
+
+        vendor_version_id = row[0]
+
+        # 2️⃣ Fetch product within that version
+        cur.execute("""
+            SELECT *
+            FROM product
+            WHERE id = %s
+              AND vendor_version_id = %s
+              AND is_active = true
+        """, (product_id, vendor_version_id))
+
+        row = cur.fetchone()
+        if not row:
+            return None
+
+        # 3️⃣ Normalize JSON fields
+        product = dict(zip([d[0] for d in cur.description], row))
+
         try:
-            with conn.cursor() as cur:
+            product["sizes"] = json.loads(product.get("sizes") or "[]")
+        except Exception:
+            product["sizes"] = []
 
-                # 1️⃣ Resolve vendor_version_id
-                if version:
-                    cur.execute("""
-                        SELECT vv.id
-                        FROM vendor_version vv
-                        JOIN vendor v ON v.id = vv.vendor_id
-                        WHERE v.handle = %s
-                          AND vv.version = %s
-                        LIMIT 1
-                    """, (handle, version))
-                else:
-                    cur.execute("""
-                        SELECT vv.id
-                        FROM vendor_version vv
-                        JOIN vendor v ON v.id = vv.vendor_id
-                        WHERE v.handle = %s
-                        ORDER BY
-                            vv.is_active DESC,
-                            vv.published_at DESC
-                        LIMIT 1
-                    """, (handle,))
+        try:
+            product["dimensions"] = json.loads(product.get("dimensions") or "{}")
+        except Exception:
+            product["dimensions"] = None
 
-                row = cur.fetchone()
-                if not row:
-                    return None
-
-                vendor_version_id = row[0]
-
-                # 2️⃣ Fetch product within that version
-                cur.execute("""
-                    SELECT *
-                    FROM product
-                    WHERE id = %s
-                      AND vendor_version_id = %s
-                      AND is_active = true
-                """, (product_id, vendor_version_id))
-
-                row = cur.fetchone()
-                if not row:
-                    return None
-
-                # 3️⃣ Normalize JSON fields
-                product = dict(zip([d[0] for d in cur.description], row))
-
-                try:
-                    product["sizes"] = json.loads(product.get("sizes") or "[]")
-                except:
-                    product["sizes"] = []
-
-                try:
-                    product["dimensions"] = json.loads(product.get("dimensions") or "{}")
-                except:
-                    product["dimensions"] = None
-
-                # try:
-                #     product["image_urls"] = json.loads(product.get("image_urls") or "[]")
-                # except:
-                #     product["image_urls"] = []
-
-                return product
-
-        finally:
-            pool.putconn(conn)
-
-    return await asyncio.to_thread(db_call)
+        return product
 
 
+from psycopg2.extensions import connection
 
-async def get_vendor_product_categories(
+
+def get_vendor_product_categories(
+    conn: connection,
     handle: str,
-    version: str | None = None
+    version: str | None = None,
 ):
-    pool = get_pg_pool()
+    with conn.cursor() as cur:
 
-    def db_call():
-        conn = pool.getconn()
-        try:
-            with conn.cursor() as cur:
+        # 1️⃣ Resolve vendor_version_id
+        if version:
+            cur.execute("""
+                SELECT vv.id
+                FROM vendor_version vv
+                JOIN vendor v ON v.id = vv.vendor_id
+                WHERE v.handle = %s
+                  AND vv.version = %s
+                LIMIT 1
+            """, (handle, version))
+        else:
+            cur.execute("""
+                SELECT vv.id
+                FROM vendor_version vv
+                JOIN vendor v ON v.id = vv.vendor_id
+                WHERE v.handle = %s
+                ORDER BY
+                    vv.is_active DESC,
+                    vv.published_at DESC
+                LIMIT 1
+            """, (handle,))
 
-                # 1️⃣ Resolve vendor_version_id
-                if version:
-                    cur.execute("""
-                        SELECT vv.id
-                        FROM vendor_version vv
-                        JOIN vendor v ON v.id = vv.vendor_id
-                        WHERE v.handle = %s
-                          AND vv.version = %s
-                        LIMIT 1
-                    """, (handle, version))
-                else:
-                    cur.execute("""
-                        SELECT vv.id
-                        FROM vendor_version vv
-                        JOIN vendor v ON v.id = vv.vendor_id
-                        WHERE v.handle = %s
-                        ORDER BY
-                            vv.is_active DESC,
-                            vv.published_at DESC
-                        LIMIT 1
-                    """, (handle,))
+        row = cur.fetchone()
+        if not row:
+            return []
 
-                row = cur.fetchone()
-                if not row:
-                    return []
+        vendor_version_id = row[0]
 
-                vendor_version_id = row[0]
+        # 2️⃣ Fetch categories
+        cur.execute("""
+            SELECT DISTINCT name
+            FROM category
+            WHERE vendor_version_id = %s
+            ORDER BY name ASC
+        """, (vendor_version_id,))
 
-                cur.execute("""
-                    SELECT DISTINCT name
-                    FROM category
-                    WHERE vendor_version_id = %s
-                    ORDER BY name ASC
-                """, (vendor_version_id,))
-
-                rows = cur.fetchall()
-                return [r[0] for r in rows]
-
-        finally:
-            pool.putconn(conn)
-
-    return await asyncio.to_thread(db_call)
-
+        rows = cur.fetchall()
+        return [r[0] for r in rows]
 
 # import math
 # import json
