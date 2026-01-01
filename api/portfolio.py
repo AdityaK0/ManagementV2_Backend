@@ -32,7 +32,7 @@ def portfolio_meta_data(
     response: Response,
     db: connection = Depends(get_db),
 ):
-    # response.headers["Cache-Control"] = "no-store"
+    response.headers["Cache-Control"] = "no-store"
     return get_meta_data(business_name, db)
 
 
