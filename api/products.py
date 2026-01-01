@@ -34,7 +34,7 @@ def public_products(
         and not v
     ):
         response.headers["Cache-Control"] = (
-            "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
+            "public, max-age=300, s-maxage=300, stale-while-revalidate=60"
         )
     else:
         response.headers["Cache-Control"] = "no-store"
@@ -84,7 +84,7 @@ def get_vendor_categories(
     db: connection = Depends(get_db),
 ):
     response.headers["Cache-Control"] = (
-        "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
+        "public, max-age=300, s-maxage=300, stale-while-revalidate=60"
     )
 
     return get_vendor_product_categories(
