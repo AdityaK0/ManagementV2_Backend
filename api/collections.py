@@ -22,7 +22,9 @@ def public_collections(
     if collections is None:
         raise HTTPException(status_code=404, detail="Vendor not found")
 
-    response.headers["Cache-Control"] = "no-store"
+    response.headers["Cache-Control"] = (
+        "public, max-age=300, s-maxage=300, stale-while-revalidate=60"
+    )
     return collections
 
 

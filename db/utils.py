@@ -132,7 +132,7 @@ def fetch_portfolio_full_json(self, vendor_slug: str):
                 "category_name": p["category_name"],
                 "meta_title": p.get("meta_title") or "",
                 "meta_description": p.get("meta_description") or "",
-                "images": imgs,
+                "image_urls": imgs,
                 "sizes": safe_json(p["sizes"]),
                 "is_in_stock": p["stock_quantity"] > 0,
                 "is_featured": p["is_featured"],
