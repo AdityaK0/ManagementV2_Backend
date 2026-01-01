@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Depends
+from psycopg2.extensions import connection
 from services.portfolio_service import (
     get_vendor_portfolio,
     get_meta_data,
 )
+from db.connection import get_db
 
 router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
 
@@ -24,13 +26,13 @@ async def public_vendor_portfolio(
 
 
 @router.get("/public/{business_name}/meta/")
-async def portfolio_meta_data(
+def portfolio_meta_data(
     business_name: str,
-    response: Response
+    response: Response,
+    db: connection = Depends(get_db),
 ):
     response.headers["Cache-Control"] = "no-store"
-    return await get_meta_data(business_name)
-
+    return get_meta_data(business_name, db)
 
 
 # from fastapi import APIRouter, HTTPException,Response

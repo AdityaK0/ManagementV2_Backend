@@ -53,32 +53,24 @@ async def get_vendor_portfolio(
     return await asyncio.to_thread(db_call)
 
 
+def get_meta_data(handle: str, conn) -> dict:
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT vv.version
+            FROM vendor_version vv
+            JOIN vendor v ON v.id = vv.vendor_id
+            WHERE v.handle = %s
+            ORDER BY
+                vv.is_active DESC,
+                vv.published_at DESC
+            LIMIT 1
+        """, (handle,))
+        row = cur.fetchone()
 
-async def get_meta_data(handle: str) -> Dict[str, Any]:
-    pool = get_pg_pool()
+        return {
+            "version": row[0] if row else None
+        }
 
-    def db_call():
-        conn = pool.getconn()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT vv.version
-                    FROM vendor_version vv
-                    JOIN vendor v ON v.id = vv.vendor_id
-                    WHERE v.handle = %s
-                    ORDER BY
-                        vv.is_active DESC,
-                        vv.published_at DESC
-                    LIMIT 1
-                """, (handle,))
-                row = cur.fetchone()
-                return {
-                    "version": row[0] if row else None
-                }
-        finally:
-            pool.putconn(conn)
-
-    return await asyncio.to_thread(db_call)
 
 
 

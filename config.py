@@ -43,9 +43,8 @@ def load_settings() -> Settings:
     """
 
     # Your .env.prod is one folder ABOVE the project folder
-    parent_env = Path(__file__).resolve().parents[2] / ".env"
+    parent_env = Path(__file__).resolve().parents[2] / ".env.prod"
     local_env = Path(__file__).resolve().parent / ".env"
-
     if parent_env.exists():
         print(f"🚀 Loaded production env: {parent_env}")
         return Settings(_env_file=str(parent_env))
