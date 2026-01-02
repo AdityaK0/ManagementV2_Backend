@@ -23,7 +23,7 @@ def public_collections(
         raise HTTPException(status_code=404, detail="Vendor not found")
 
     response.headers["Cache-Control"] = (
-        "public, max-age=300, s-maxage=300, stale-while-revalidate=60"
+        "public, max-age=3000, s-maxage=3000, stale-while-revalidate=60"
     )
     return collections
 
