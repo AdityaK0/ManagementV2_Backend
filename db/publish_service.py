@@ -94,6 +94,8 @@ def publish_vendor(
             "is_featured",
             "meta_title",
             "meta_description",
+            "created_at",
+            "updated_at"
         ],
         rows=[
             (
@@ -115,6 +117,8 @@ def publish_vendor(
                 p.get("is_featured", False),
                 p.get("meta_title"),
                 p.get("meta_description"),
+                p.get("created_at"),
+                p.get("updated_at")
             )
             for p in data["products"]
         ]

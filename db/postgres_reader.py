@@ -70,6 +70,8 @@ class PostgresReader:
                 "is_featured": p["is_featured"],
                 "meta_title": p["meta_title"],
                 "meta_description": p["meta_description"],
+                "created_at": p["created_at"],
+                "updated_at": p["updated_at"],
             } for p in products_raw]
 
             cursor.execute("""
