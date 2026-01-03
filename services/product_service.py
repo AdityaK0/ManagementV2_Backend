@@ -169,10 +169,6 @@ def get_vendor_product_detail(
         # 3️⃣ Normalize JSON fields
         product = dict(zip([d[0] for d in cur.description], row))
 
-        try:
-            product["sizes"] = json.loads(product.get("sizes") or "[]")
-        except Exception:
-            product["sizes"] = []
 
         try:
             product["dimensions"] = json.loads(product.get("dimensions") or "{}")
