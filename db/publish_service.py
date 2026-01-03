@@ -76,6 +76,7 @@ def publish_vendor(
     writer.bulk_insert(
         table="product",
         columns=[
+            "source_id",
             "vendor_id",
             "vendor_version_id",
             "product_uid",
@@ -99,6 +100,7 @@ def publish_vendor(
         ],
         rows=[
             (
+                p["source_id"],
                 vendor_id,
                 vendor_version_id,
                 p["uid"],
