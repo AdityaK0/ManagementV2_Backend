@@ -180,5 +180,6 @@ def publish_vendor(
     return {
         "vendor": vendor_slug,
         "version": version,
+        "vendor_version_id": vendor_version_id,
         "status": "published"
     }
