@@ -157,7 +157,7 @@ def get_vendor_product_detail(
         cur.execute("""
             SELECT *
             FROM product
-            WHERE id = %s
+            WHERE source_id = %s
               AND vendor_version_id = %s
               AND is_active = true
         """, (product_id, vendor_version_id))

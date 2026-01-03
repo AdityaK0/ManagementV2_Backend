@@ -52,10 +52,11 @@ def get_vendor_collections(
 
         # 3️⃣ Fetch product mappings
         cur.execute("""
-            SELECT collection_id, product_id
-            FROM portfolio_collection_product
-            WHERE collection_id = ANY(%s)
-            ORDER BY sort_order ASC
+            SELECT pcp.collection_id, p.source_id
+            FROM portfolio_collection_product pcp
+            JOIN product p ON p.id = pcp.product_id
+            WHERE pcp.collection_id = ANY(%s)
+            ORDER BY pcp.sort_order ASC
         """, (collection_ids,))
 
         map_rows = cur.fetchall()
@@ -148,10 +149,11 @@ def get_vendor_collection_details(
 
         # 3️⃣ Fetch product mappings
         cur.execute("""
-            SELECT product_id
-            FROM portfolio_collection_product
-            WHERE collection_id = %s
-            ORDER BY sort_order ASC
+            SELECT p.source_id
+            FROM portfolio_collection_product pcp
+            JOIN product p ON p.id = pcp.product_id
+            WHERE pcp.collection_id = %s
+            ORDER BY pcp.sort_order ASC
         """, (collection_id,))
 
         product_ids = [r[0] for r in cur.fetchall()]
