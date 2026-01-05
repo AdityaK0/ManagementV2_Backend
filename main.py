@@ -6,7 +6,6 @@ Serves public portfolio APIs backed by Elasticsearch
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api import portfolio, products, collections
-from background.redis_listener import start_background_listener
 from db.connection import init_pg_pool
 
 app = FastAPI(
