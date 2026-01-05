@@ -16,13 +16,20 @@ def public_products(
     search: str = "",
     min_price: Union[float, None, str] = Query(None),
     max_price: Union[float, None, str] = Query(None),
-    category: Union[str, None, str] = Query(None),
+    category: Union[str, None] = Query(None),
+    gender: Union[str, None] = Query(None),
     v: str | None = None,
     db: connection = Depends(get_db),
 ):
     min_price = None if min_price in ("", None) else float(min_price)
     max_price = None if max_price in ("", None) else float(max_price)
-    category = None if category in ("", None) else category
+    
+    # Handle multiple categories (comma-separated string from frontend)
+    categories = None
+    if category and category.strip():
+        categories = [c.strip() for c in category.split(",") if c.strip()]
+        
+    gender = None if gender in ("", None) else gender
 
     if (
         page == 1
@@ -31,6 +38,7 @@ def public_products(
         and not min_price
         and not max_price
         and not category
+        and not gender
         #and not v
     ):
         response.headers["Cache-Control"] = (
@@ -47,8 +55,9 @@ def public_products(
         search,
         min_price,
         max_price,
-        category,
+        categories,
         v,
+        gender,
     )
 
 

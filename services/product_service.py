@@ -11,8 +11,9 @@ def get_vendor_products(
     search: str = "",
     min_price: float | None = None,
     max_price: float | None = None,
-    category: str | None = None,
+    categories: list[str] | None = None,
     version: str | None = None,
+    gender: str | None = None,
 ):
     offset = (page - 1) * page_size
 
@@ -58,9 +59,18 @@ def get_vendor_products(
             conditions.append("p.price <= %s")
             params.append(max_price)
 
-        if category:
-            conditions.append("p.category_name = %s")
-            params.append(category)
+        if categories:
+            conditions.append("p.category_name = ANY(%s)")
+            params.append(categories)
+
+        if gender:
+            gender = gender.lower()
+            if gender == 'male':
+                conditions.append("LOWER(p.gender) IN ('male', 'both', 'unisex')")
+            elif gender == 'female':
+                conditions.append("LOWER(p.gender) IN ('female', 'both', 'unisex')")
+            elif gender in ('unisex', 'both'):
+                conditions.append("LOWER(p.gender) IN ('both', 'unisex')")
 
         if search:
             conditions.append("""
