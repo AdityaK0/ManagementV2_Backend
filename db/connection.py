@@ -9,8 +9,8 @@ def init_pg_pool():
     global pg_pool
     if pg_pool is None:
         pg_pool = SimpleConnectionPool(
-            minconn=2,
-            maxconn=10,
+            minconn=1,
+            maxconn=4,
             host=settings.PORTFOLIO_PG_HOST,
             database=settings.PORTFOLIO_PG_DB,
             user=settings.PORTFOLIO_PG_USER,
