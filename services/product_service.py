@@ -60,7 +60,7 @@ def get_vendor_products(
             params.append(max_price)
 
         if categories:
-            conditions.append("p.category_name = ANY(%s)")
+            conditions.append("TRIM(p.category_name) = ANY(%s)")
             params.append(categories)
 
         if gender:
@@ -228,10 +228,10 @@ def get_vendor_product_categories(
 
         # 2️⃣ Fetch categories
         cur.execute("""
-            SELECT DISTINCT name
+            SELECT DISTINCT TRIM(name)
             FROM category
             WHERE vendor_version_id = %s
-            ORDER BY name ASC
+            ORDER BY TRIM(name) ASC
         """, (vendor_version_id,))
 
         rows = cur.fetchall()
