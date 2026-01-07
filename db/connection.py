@@ -17,6 +17,7 @@ def init_pg_pool():
             password=settings.PORTFOLIO_PG_PASSWORD,
             port=settings.PORTFOLIO_PG_PORT,
             connect_timeout=3,
+            sslmode=settings.PG_SSLMODE,
         )
 
 

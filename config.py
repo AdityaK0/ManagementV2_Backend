@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
 
+    @property
+    def PG_SSLMODE(self) -> str:
+        if self.ENVIRONMENT in {"prod", "staging"}:
+            return "require"
+        return "disable"
+
 
 def load_settings() -> Settings:
     """
