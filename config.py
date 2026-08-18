@@ -1,5 +1,5 @@
 from pathlib import Path
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -9,8 +9,6 @@ class Settings(BaseSettings):
     POSTGRES_USER: str | None = None
     POSTGRES_PASSWORD: str | None = None
     POSTGRES_PORT: int = 5432
-
-
 
     PORTFOLIO_PG_HOST: str | None = None
     PORTFOLIO_PG_PORT: int = 5435
@@ -44,19 +42,21 @@ class Settings(BaseSettings):
 
 def load_settings() -> Settings:
     """
-    Load env from parent folder if `.env.prod` exists.
-    Otherwise load `.env.local` from current project.
+    Local development:
+        Load values from .env if it exists.
+
+    Production:
+        Load values directly from environment variables.
     """
 
-    # Your .env.prod is one folder ABOVE the project folder
-    parent_env = Path(__file__).resolve().parents[2] / ".env.prod"
     local_env = Path(__file__).resolve().parent / ".env"
-    if parent_env.exists():
-        print(f"🚀 Loaded production env: {parent_env}")
-        return Settings(_env_file=str(parent_env))
 
-    return Settings(_env_file=str(local_env))
+    if local_env.exists():
+        print(f"Loaded local env: {local_env}")
+        return Settings(_env_file=str(local_env))
 
+    print("Loading settings from environment variables")
+    return Settings()
 
 
 settings = load_settings()
